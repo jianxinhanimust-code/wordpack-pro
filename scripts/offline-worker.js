@@ -5,6 +5,8 @@ const scope = self.registration.scope
 const prefix = `wordpack-pro:${scope}:`
 const cacheName = prefix + revision
 const shell = new URL('index.html', scope).href
+// 部署在子路径时（如 /wordpack-pro/）资源前缀也要跟着变
+const assetPrefix = new URL('assets/', scope).pathname
 const urls = new Set(assets.map(path =>
   new URL(path.split('/').map(encodeURIComponent).join('/'), scope).href))
 
@@ -27,13 +29,20 @@ self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return
   const url = new URL(event.request.url)
   if (url.origin !== self.location.origin) return
-  const hashless = url.href
+  // The AI proxy is never cached: it answers per request and must fail when offline.
+  if (url.pathname.startsWith('/api/')) return
   const navigation = event.request.mode === 'navigate' && (url.pathname === new URL(scope).pathname
     || url.pathname === new URL(shell).pathname)
-  if (!navigation && !urls.has(hashless)) return
+  // Precached assets plus anything else the app has already pulled in (词书分片、字体).
+  const cacheable = navigation || urls.has(url.href) || url.pathname.startsWith(assetPrefix)
+  if (!cacheable) return
   event.respondWith((async () => {
     const cache = await caches.open(cacheName)
-    const cached = await cache.match(navigation ? shell : hashless)
-    return cached ?? fetch(event.request)
+    const key = navigation ? shell : url.href
+    const cached = await cache.match(key)
+    if (cached) return cached
+    const response = await fetch(event.request)
+    if (!navigation && response.ok && response.type === 'basic') await cache.put(key, response.clone())
+    return response
   })())
 })

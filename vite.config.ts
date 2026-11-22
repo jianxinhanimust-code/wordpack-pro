@@ -11,6 +11,13 @@ const bundledLibraries = [
   '@fontsource-variable/manrope', '@fontsource/space-mono',
 ]
 
+/**
+ * 四级、六级之外的词书分片不预缓存：首次访问少下载约 2.2 MB。
+ * 它们在第一次打开时才进缓存（Service Worker 运行时缓存），之后同样可离线。
+ */
+const optionalBooks = ['gre', 'toefl', 'npee', 'primary', 'primary_school']
+const optionalChunk = new RegExp(`^assets/(?:${optionalBooks.join('|')})-[\\w-]+\\.js$`)
+
 async function packageNotices(directory: string) {
   const files = ['LICENSE', 'THIRD_PARTY_NOTICES.md']
   await Promise.all(files.map(file => copyFile(new URL(file, import.meta.url), join(directory, file))))
@@ -34,7 +41,7 @@ function offlineBuild(): Plugin {
         .filter(entry => entry.isFile())
         .map(entry => join(entry.parentPath, entry.name))
         .map(path => relative(directory, path).replaceAll('\\', '/'))
-        .filter(path => path !== 'offline-worker.js' && !path.endsWith('.map'))
+        .filter(path => path !== 'offline-worker.js' && !path.endsWith('.map') && !optionalChunk.test(path))
         .sort()
       if (!entries.includes('index.html')) throw Error('Production build has no offline shell.')
       const worker = await readFile(new URL('./scripts/offline-worker.js', import.meta.url), 'utf8')

@@ -23,6 +23,9 @@ try {
   })
   const book = precached.find(path => /^\/assets\/cet4-.*\.js$/.test(path))
   assert.ok(book, 'a separate CET-4 book chunk is precached')
+  // 只考四六级的用户不该为 GRE/TOEFL 首屏多付 2.2 MB
+  assert.ok(!precached.some(path => /^\/assets\/(gre|toefl|npee|primary)-.*\.js$/.test(path)),
+    'optional large books are not precached')
   assert.ok(precached.includes('/foil-studio.webp'))
   assert.ok(precached.includes('/manifest.webmanifest'))
   assert.ok(!precached.some(path => path.startsWith('/api/')))
@@ -54,8 +57,25 @@ try {
   const count = page.locator('.metric').filter({ hasText: '今日新词' }).locator('.metric-count')
   await count.waitFor()
   assert.match(await count.innerText(), /^1\s*\/\s*12$/)
-  console.log(`PWA test passed with ${precached.length} precached files. Offline reload, CET-4 switch, card reveal, and session save passed.`)
-} finally {
+
+  // 运行时缓存：只预缓存四六级，其余词书在第一次打开时进缓存（之后同样离线可用）
+  await context.setOffline(false)
+  await page.goto(`${origin}/#books`)
+  const gaokao = page.locator('.book-tile').filter({ has: page.getByRole('heading', { name: '高考英语' }) })
+  await gaokao.getByRole('button', { name: '使用高考英语' }).click()
+  await gaokao.getByText('正在使用', { exact: true }).waitFor()
+  let runtimeCached = false
+  for (let attempt = 0; attempt < 40 && !runtimeCached; attempt += 1) {
+    runtimeCached = await page.evaluate(async () => {
+      const key = (await caches.keys()).find(name => name.startsWith('wordpack-pro:'))
+      if (!key) return false
+      const paths = (await (await caches.open(key)).keys()).map(request => new URL(request.url).pathname)
+      return paths.some(path => /\/assets\/npee-.*\.js$/.test(path))
+    })
+    if (!runtimeCached) await page.waitForTimeout(250)
+  }
+  assert.ok(runtimeCached, 'a book opened for the first time is cached at runtime')
+  console.log(`PWA test passed with ${precached.length} precached files. Offline reload, CET-4 switch, card reveal, session save, and runtime book caching passed.`)} finally {
   await browser?.close()
   server.closeAllConnections()
   await new Promise(resolve => server.close(resolve))

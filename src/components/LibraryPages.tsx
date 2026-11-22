@@ -101,7 +101,8 @@ function WordImport({ book, title, close, done }: { book: string; title?: string
           meta: { id, name: label, shortName: label, description: '本地导入的个人词汇', color: 'emerald', totalCount: byKey.size } }
         return { ...data, books: [...data.books.filter(b => b.id !== id), custom], settings: { ...data.settings, book: id } }
       })
-      const omitted = Math.max(0, accepted.length - added + skipped + words.length - accepted.length)
+      // 跳过的＝解析阶段失败或文件内重复（skipped）＋ 与该词书已有词条重复（words 减 added）
+      const omitted = words.length - added + skipped
       done(`已导入 ${added} 个新词${omitted ? `，跳过 ${omitted} 条重复或无效记录` : ''}。`)
     } catch {
       setError('导入失败，请检查词条长度或浏览器存储空间。')
