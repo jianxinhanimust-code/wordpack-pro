@@ -55,6 +55,9 @@ coverage/
 .cache/
 *.tsbuildinfo
 
+# 参考站抓取产物（体积大，用 npm run capture:ref 按需重新生成）
+refs/
+
 # 系统
 Thumbs.db
 ehthumbs.db

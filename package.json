@@ -18,6 +18,7 @@
     "test:watch": "vitest",
     "test:server": "node --test server/ai.spec-node.mjs",
     "test:offline": "node server/offline.check.mjs",
+    "capture:ref": "node scripts/capture-reference.mjs",
     "lint": "oxlint",
     "typecheck": "tsc -b --noEmit",
     "wordlists:build": "python scripts/build_ecdict.py",

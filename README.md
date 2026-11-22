@@ -79,6 +79,8 @@ npm audit
 
 端到端测试默认使用本机 Chrome。离线测试也可用 Playwright 下载的 Chromium，安装后设置 `WORDPACK_CHROMIUM=playwright`；端到端测试用 `PLAYWRIGHT_CHANNEL=chromium` 切换。详见 [开发与验收记录](BUILD-REPORT.md)。
 
+原版参考站按每日访问量限流（北京时间 08:00 重置）。要重新抓一份对照素材，用 `npm run capture:ref`：脚本只做一次页面加载，在同一页里截桌面与手机视口、收集配色字体等令牌，产物写入 `refs/`（已被 gitignore）。
+
 ## 已知边界
 
 - 四六级归类取自 ECDICT。阅读专题有 33 条自编用法例句和搭配，以及人工核对的共鸣关系。大词书其余条目以 ECDICT 释义和通用音标为主，部分无音标或没有英美双音标、例句和词源。
