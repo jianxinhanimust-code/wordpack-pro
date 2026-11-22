@@ -3,17 +3,18 @@ import { BookText, ExternalLink, Link2, Volume2 } from 'lucide-react'
 import { getNote, other, related } from '@/data/editorial'
 import type { Word } from '@/data/books'
 import type { Preferences } from '@/core/schema'
-import { speak } from '@/core/speech'
+import { speak, speechFailureText, speechNeedsSetup } from '@/core/speech'
+import type { SpeechFailure } from '@/core/speech'
 
 export function Pronounce({ text, settings, label = '播放发音' }: { text: string; settings: Preferences; label?: string }) {
-  const [unavailable, setUnavailable] = useState(false)
+  const [failure, setFailure] = useState<SpeechFailure | null>(null)
   return <span className="pronounce">
     <button className="icon-button" aria-label={label} title={label} onClick={() => {
-      setUnavailable(false)
-      speak(text, { voice: settings.voice, rate: settings.rate, lang: settings.accent,
-        onError: () => setUnavailable(true) })
+      setFailure(null)
+      speak(text, { voice: settings.voice, rate: settings.rate, lang: settings.accent, onError: setFailure })
     }}><Volume2 size={18}/></button>
-    {unavailable && <small role="status">设备语音不可用</small>}
+    {failure && <small role="status">{speechFailureText[failure]}
+      {speechNeedsSetup(failure) && ' 在手机「设置 → 文字转语音」里安装英语语音包。'}</small>}
   </span>
 }
 

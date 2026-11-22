@@ -6,7 +6,8 @@ import type { Word } from '@/data/books'
 import { grades, mistakeSkill, ratingSchedule, recordRating, skillOf } from '@/core/learning'
 import { getNote, meaningOf } from '@/data/editorial'
 import { exactSpelling, makeChoices } from '@/core/practice'
-import { speak, stopSpeaking } from '@/core/speech'
+import { speak, speechFailureText, speechNeedsSetup, stopSpeaking } from '@/core/speech'
+import type { SpeechFailure } from '@/core/speech'
 import { save } from '@/core/vault'
 import { WordCard } from './WordCard'
 import { Pronounce, WordDetails } from './WordDetails'
@@ -77,7 +78,7 @@ function Question({ word, mode, pool, data, staticMotion, onComplete, switchReca
   const [result, setResult] = useState<boolean | null>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const [audioError, setAudioError] = useState(false)
+  const [audioError, setAudioError] = useState<SpeechFailure | null>(null)
   const locked = useRef(false)
   const revealHeading = useRef<HTMLHeadingElement>(null)
   const note = getNote(word.word)
@@ -95,9 +96,9 @@ function Question({ word, mode, pool, data, staticMotion, onComplete, switchReca
   }, [revealed])
 
   function play() {
-    setAudioError(false)
+    setAudioError(null)
     speak(word.word, { voice: data.settings.voice, rate: data.settings.rate, lang: data.settings.accent,
-      onError: () => setAudioError(true) })
+      onError: setAudioError })
   }
   function check() {
     const passes = exactSpelling(input, word.word)
@@ -132,7 +133,9 @@ function Question({ word, mode, pool, data, staticMotion, onComplete, switchReca
         <h1>{listening ? '听一听，回忆这个词' : spelling ? '根据释义拼写' : activeContext ? '根据语境回忆词义' : '回忆这个单词的中文意思'}</h1>
         {listening && <div className="audio-prompt">
           <button onClick={play} className="secondary"><Volume2 size={19}/>播放发音</button>
-          {audioError && <p role="status">设备没有可用语音。 <button className="text-button" onClick={switchRecall}>切换快速认词 <ChevronRight size={15}/></button></p>}
+          {audioError && <p role="status">{speechFailureText[audioError]}
+            {speechNeedsSetup(audioError) && ' 在手机「设置 → 文字转语音」里安装英语语音包。'}{' '}
+            <button className="text-button" onClick={switchRecall}>切换快速认词 <ChevronRight size={15}/></button></p>}
         </div>}
         {!listening && !spelling && <div className="prompt-word"><b lang="en">{word.word}</b><Pronounce text={word.word} settings={data.settings}/></div>}
         {!listening && spelling && <p className="meaning-prompt">{meaningOf(word) || '本词暂无中文释义，可查看答案。'}</p>}

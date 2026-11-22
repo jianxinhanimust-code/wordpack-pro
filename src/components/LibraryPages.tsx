@@ -7,7 +7,7 @@ import { PERSONAL } from '@/data/library'
 import { importBackup, save } from '@/core/vault'
 import { parseBackup, serializeBackup, wordKey } from '@/core/schema'
 import type { Data, Preferences } from '@/core/schema'
-import { listVoices, waitVoices } from '@/core/speech'
+import { listVoices, voiceReport, waitVoices } from '@/core/speech'
 import { Pronounce } from './WordDetails'
 
 export function Modal({ title, close, children }: { title: string; close: () => void; children: ReactNode }) {
@@ -136,11 +136,12 @@ export function SettingsPage({ data, offlineReady, update, stats }: {
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [voices, setVoices] = useState(listVoices)
+  const [voiceCheck, setVoiceCheck] = useState(voiceReport)
   const [pending, setPending] = useState<{ text: string; name: string } | null>(null)
   const [busy, setBusy] = useState(false)
   const [settings, optimistic] = useOptimistic(data.settings,
     (current, patch: Partial<Preferences>) => ({ ...current, ...patch }))
-  useEffect(() => { void waitVoices().then(setVoices) }, [])
+  useEffect(() => { void waitVoices().then(list => { setVoices(list); setVoiceCheck(voiceReport()) }) }, [])
   function change(patch: Partial<Preferences>) {
     startTransition(async () => {
       optimistic(patch)
@@ -196,6 +197,12 @@ export function SettingsPage({ data, offlineReady, update, stats }: {
           <label className="field">语速<select value={settings.rate} onChange={e => change({ rate: Number(e.target.value) })}>
             {[...new Set([0.65, 0.8, 0.9, 1, 1.15, settings.rate])].sort((a,b)=>a-b).map(n => <option key={n} value={n}>{n}×</option>)}</select></label>
           <div><Pronounce text="Read a little every day." settings={settings} label="试听发音"/></div>
+          <div className="field"><span>语音自检</span>
+            <p className="muted" role="status">{voiceCheck.supported
+              ? `本机共有 ${voiceCheck.total} 个语音，其中英语 ${voiceCheck.english} 个${voiceCheck.english ? '' : '（需要在系统「文字转语音」里安装英语语音包）'}。`
+              : '这个浏览器不支持语音合成。'}</p>
+            <button className="secondary" onClick={() => { setVoices(listVoices()); setVoiceCheck(voiceReport()) }}>重新检测</button>
+          </div>
         </div>
       </section>
       <section className="panel form-panel"><h2><HardDrive size={19}/>本地备份</h2>
