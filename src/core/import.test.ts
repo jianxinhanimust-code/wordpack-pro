@@ -98,6 +98,40 @@ describe('parseWordlist', () => {
     expect(w.definitions.length).toBe(2)
   })
 
+  it('读取单条 JSON 对象并将词性归一化', () => {
+    const w = first('{"term":"derive","definitions":[{"pos":"vt.","meaning":"推导"}]}')
+    expect(w.definitions).toEqual([['v.', '推导']])
+  })
+
+  it('保留有效 JSON 记录并统计重复和不合规词条', () => {
+    const result = parseWordlist(JSON.stringify([{
+      word: 'Don’t', definitions: [['v.', '不要']], tip: { text: 'invalid metadata' },
+    }, { word: "don't", mean: '不要' }, { word: 'javascript:<script>', mean: '无效' }]), BOOK)
+    expect(result.words).toEqual([makeWord({ word: "Don't", definitions: [['v.', '不要']] }, BOOK)])
+    expect(result.skipped).toBe(2)
+  })
+
+  it('根据 CSV 表头匹配列并处理多行及转义引号', () => {
+    const csv = '\uFEFF释义,音标,单词\r\n"n. 人工\n智能，简称 ""AI""",/ˌɑːtɪˈfɪʃəl/,artificial intelligence'
+    const result = parseWordlist(csv, BOOK)
+    expect(result.words).toEqual([makeWord({
+      word: 'artificial intelligence', phonetic: '/ˌɑːtɪˈfɪʃəl/', definitions: [['n.', '人工\n智能，简称 "AI"']],
+    }, BOOK)])
+    expect(result.skipped).toBe(0)
+  })
+
+  it('兼容没有表头的带引号两列 CSV', () => {
+    const w = first('"adapt","v. 适应，调整"')
+    expect(w.definitions).toEqual([['v.', '适应，调整']])
+    expect(w.phonetic).toBe('')
+  })
+
+  it('丢弃 CSV 中引号未闭合的行', () => {
+    const { words, skipped } = parseWordlist('word,meaning\nadapt,适应\nadopt,"采纳', BOOK)
+    expect(words.map(w => w.word)).toEqual(['adapt'])
+    expect(skipped).toBe(1)
+  })
+
   it('去重', () => {
     const r = parseWordlist('apple 苹果\napple 苹果\nApple 苹果', BOOK)
     expect(r.words.length).toBe(1)
@@ -138,9 +172,6 @@ describe('toCSV', () => {
   it('CSV 可被自身解析器读回', () => {
     const words = [makeWord({ word: 'apple', phonetic: '/ˈæpl/', definitions: [['n.', '苹果']] }, BOOK)]
     const csv = toCSV(words)
-    const lines = csv.split('\n').slice(1)
-    const r = parseWordlist(lines.join('\n'), BOOK)
-    expect(r.words.length).toBeGreaterThan(0)
-    expect(r.words[0].word).toBe('apple')
+    expect(parseWordlist(csv, BOOK).words).toEqual(words)
   })
 })

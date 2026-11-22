@@ -1,111 +1,48 @@
 {
-  "name": "not-back-words-lite",
-  "main": "electron/main.js",
+  "name": "wordpack-pro",
+  "version": "0.1.0",
   "private": true,
-  "version": "1.0.1",
   "type": "module",
-  "description": "开源英语单词学习工具：英译汉、汉译英、默写、听写四种练习，SM-2 记忆算法",
-  "author": "TheObservantDeveloper2026",
+  "description": "WordPack Pro 拆词记进阶版",
   "license": "MIT",
-  "keywords": [
-    "english",
-    "vocabulary",
-    "word",
-    "learning",
-    "flashcard",
-    "srs",
-    "sm2",
-    "pwa"
-  ],
+  "engines": {
+    "node": "^22.12.0 || ^24.0.0 || >=26.0.0"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
+    "start": "node server/start.mjs",
     "build:pages": "node scripts/build_pages.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:server": "node --test server/ai.spec-node.mjs",
+    "test:offline": "node server/offline.check.mjs",
     "lint": "oxlint",
     "typecheck": "tsc -b --noEmit",
-    "wordlists:parse": "python scripts/parse_wordlists.py",
-    "wordlists:build": "python scripts/build_books.py",
+    "wordlists:build": "python scripts/build_ecdict.py",
     "icons": "python scripts/make_icons.py",
-    "cap:add:android": "npm run build && cap add android",
-    "cap:add:ios": "npm run build && cap add ios",
-    "cap:sync": "npm run build && cap sync",
-    "electron:dev": "electron .",
-    "dist:win": "npm run build && electron-builder --win",
-    "dist:mac": "npm run build && electron-builder --mac",
-    "dist:linux": "npm run build && electron-builder --linux"
+    "test:e2e": "playwright test"
   },
   "dependencies": {
-    "@capacitor/android": "^7.6.9",
-    "@capacitor/core": "^7.6.9",
+    "@fontsource-variable/manrope": "^5.3.0",
+    "@fontsource/space-mono": "^5.3.0",
+    "lucide-react": "^1.77.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
-    "recharts": "^3.10.1"
+    "ts-fsrs": "^6.0.1",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@playwright/test": "^1.65.1",
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",
-    "autoprefixer": "^10.6.1",
+    "fake-indexeddb": "^6.2.8",
     "oxlint": "^1.81.0",
-    "postcss": "^8.5.30",
-    "tailwindcss": "^3.4.19",
     "typescript": "~6.0.2",
     "vite": "^8.3.0",
     "vitest": "^5.0.4"
-  },
-  "optionalDependencies": {
-    "@capacitor/cli": "^7.6.9",
-    "electron": "^33.4.11",
-    "electron-builder": "^25.1.8"
-  },
-  "build": {
-    "appId": "com.notbemoji.app",
-    "productName": "不背单词 Lite",
-    "files": [
-      "dist/**/*",
-      "electron/**/*"
-    ],
-    "directories": {
-      "output": "release"
-    },
-    "win": {
-      "icon": "build/icon.ico",
-      "target": [
-        {
-          "target": "nsis",
-          "arch": [
-            "x64"
-          ]
-        },
-        {
-          "target": "portable",
-          "arch": [
-            "x64"
-          ]
-        }
-      ]
-    },
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true
-    },
-    "mac": {
-      "target": [
-        "dmg",
-        "zip"
-      ],
-      "category": "public.app-category.education"
-    },
-    "linux": {
-      "target": [
-        "AppImage",
-        "deb"
-      ],
-      "category": "Education"
-    }
   }
 }

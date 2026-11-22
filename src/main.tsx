@@ -8,3 +8,11 @@ createRoot(document.getElementById('root')!).render(
     <App />
   </StrictMode>,
 )
+
+if (import.meta.env.PROD && 'serviceWorker' in navigator && window.isSecureContext) {
+  const base = new URL(import.meta.env.BASE_URL, document.baseURI)
+  const worker = new URL('offline-worker.js', base)
+  void navigator.serviceWorker.register(worker, { updateViaCache: 'none' }).catch(error => {
+    console.warn('WordPack Pro offline cache registration failed.', error)
+  })
+}

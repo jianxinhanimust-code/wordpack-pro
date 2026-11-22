@@ -20,6 +20,9 @@ import { makeWord } from '@/data/books'
 
 // 词性标记：长的排前面，避免 "adj." 被 "a" 抢先匹配
 const POS_TOKENS = 'adj|adv|prep|conj|pron|num|art|int|vt|vi|aux|n|v|a|ad'
+const HEADWORDS = ['word', 'headword', 'term', 'english', '单词', '英文', '词汇']
+const MEANINGS = ['mean', 'meaning', 'definition', 'translation', 'chinese', 'cn', '释义', '翻译', '中文', '中文释义']
+const PHONETICS = ['phonetic', 'phonetics', 'ipa', 'pronunciation', '音标']
 
 export interface ParseResult {
   words: Word[]
@@ -31,97 +34,107 @@ export function parseWordlist(text: string, book: string, fallbackFreq = 3): Par
   const trimmed = text.trim()
   if (!trimmed) return { words: [], skipped: 0 }
 
-  // 尝试 JSON
   if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
-    const json = parseJson(trimmed, book, fallbackFreq)
-    if (json) return json
+    return parseJson(trimmed, book, fallbackFreq)
   }
 
-  const lines = trimmed.split(/\r?\n/)
+  const first = trimmed.split(/\r\n?|\n/, 1)[0]
+  const delimiter = first.includes('\t') ? '\t' : ','
+  const headers = readDelimited(first, delimiter).next().value
+  if (headers) {
+    const names = headers.map(header => header.toLowerCase())
+    const word = names.findIndex(name => HEADWORDS.includes(name))
+    const meaning = names.findIndex(name => MEANINGS.includes(name))
+    const ipa = names.findIndex(name => PHONETICS.includes(name))
+    if (word !== -1 && (meaning !== -1 || ipa !== -1)) {
+      const rows = readDelimited(trimmed, delimiter)
+      rows.next()
+      return gather(Array.from(rows, row => row && createEntry(row[word], row[meaning], row[ipa], fallbackFreq, book)))
+    }
+  }
+
+  return gather(trimmed.split(/\r\n?|\n/)
+    .map(line => line.trim())
+    .filter(line => line && !/^[=\-*\s]{3,}$/.test(line) && !line.startsWith('#'))
+    .map(line => parseLine(line, book, fallbackFreq)))
+}
+
+function gather(entries: Iterable<Word | null>): ParseResult {
   const words: Word[] = []
   const seen = new Set<string>()
   let skipped = 0
-
-  for (const raw of lines) {
-    let line = raw.trim()
-    if (!line) continue
-    // 跳过标题行和分隔线
-    if (/^[=\-*\s]{3,}$/.test(line)) continue
-    if (/^#+/.test(line)) continue
-
-    // CSV 行：整行被引号包裹，或以引号字段开头
-    if (line.startsWith('"')) {
-      const parsed = parseCsvLine(line)
-      if (parsed) {
-        const w = makeWord(
-          {
-            word: parsed.word,
-            phonetic: parsed.ipa ? `/${parsed.ipa}/` : '',
-            freq: fallbackFreq,
-            definitions: parseSenses(parsed.mean),
-          },
-          book,
-        )
-        const key = w.word.toLowerCase()
-        if (!seen.has(key)) {
-          seen.add(key)
-          words.push(w)
-        } else skipped += 1
-        continue
-      }
-    }
-
-    const w = parseLine(line, book, fallbackFreq)
-    if (!w) {
+  for (const word of entries) {
+    const key = word?.word.toLowerCase()
+    if (!word || !key || seen.has(key) || words.length >= 40000) {
       skipped += 1
       continue
     }
-    const key = w.word.toLowerCase()
-    if (seen.has(key)) continue
     seen.add(key)
-    words.push(w)
+    words.push(word)
   }
-
   return { words, skipped }
 }
 
-/** 解析一行 CSV：word,phonetic,meaning（字段可带引号） */
-function parseCsvLine(line: string): { word: string; ipa: string; mean: string } | null {
-  // 支持双引号包裹的字段；未包裹字段用逗号分隔
-  const fields: string[] = []
-  let cur = ''
-  let inQuote = false
-
-  for (let i = 0; i < line.length; i++) {
-    const ch = line[i]
-    if (inQuote) {
-      if (ch === '"') {
-        if (line[i + 1] === '"') {
-          cur += '"'
-          i += 1
-        } else inQuote = false
-      } else cur += ch
-    } else if (ch === '"') {
-      inQuote = true
-    } else if (ch === ',') {
-      fields.push(cur)
-      cur = ''
-    } else cur += ch
+/** 引号内的分隔符、换行和双引号属于字段内容。 */
+function* readDelimited(text: string, delimiter: string): Generator<string[] | null, void> {
+  let fields: string[] = []
+  let field = ''
+  let quoted = false
+  let closed = false
+  let malformed = false
+  const normalized = text.replace(/\r\n?/g, '\n') + '\n'
+  for (let index = 0; index < normalized.length; index += 1) {
+    const char = normalized[index]
+    if (quoted) {
+      if (char !== '"') field += char
+      else if (normalized[index + 1] === '"') {
+        field += '"'
+        index += 1
+      } else {
+        quoted = false
+        closed = true
+      }
+      continue
+    }
+    if (char === '\n' || char === delimiter) {
+      fields.push(field.trim())
+      field = ''
+      closed = false
+      if (char === '\n') {
+        if (fields.length > 1 || fields[0]) yield malformed ? null : fields
+        fields = []
+        malformed = false
+      }
+    } else if (closed) {
+      if (!/\s/.test(char)) malformed = true
+    } else if (char === '"' && !field.trim()) {
+      field = ''
+      quoted = true
+    } else {
+      field += char
+    }
   }
-  fields.push(cur)
+  if (quoted) yield null
+}
 
-  const [word, ipa, mean] = fields.map((s) => s.trim())
-  if (!word || !/^[A-Za-z]/.test(word)) return null
-  return { word, ipa: ipa ?? '', mean: mean ?? '' }
+function headword(input: string) {
+  return input.normalize('NFKC').trim().replace(/[’‘]/g, "'").replace(/\s+/g, ' ')
+}
+
+function isWord(word: string) {
+  return /^[A-Za-z][A-Za-z0-9_ .'/-]{0,159}$/.test(headword(word))
 }
 
 /** 解析单行 */
 function parseLine(line: string, book: string, freq: number): Word | null {
-  // 英文单词合法性：字母开头，允许连字符、撇号、以及单词内部的空格（ice cream）
-  // 注意不能允许尾随空格，否则 "world 世界" 会被整体当成一个单词。
-  // 这里不能在函数入口做校验——整行通常还包含中文释义，
-  // 必须由各个格式分支各自提取出 word 后再校验。
-  const isWord = (s: string) => /^[A-Za-z][A-Za-z'\-]*(?: [A-Za-z'\-]+)*$/.test(s.trim())
+  if (/^"|,\s*"/.test(line)) {
+    const fields = readDelimited(line, ',').next().value
+    if (!fields) return null
+    const [word, second, third] = fields
+    return fields.length <= 2
+      ? createEntry(word, second, undefined, freq, book)
+      : createEntry(word, third, second, freq, book)
+  }
 
   // 整行必须以英文字母开头，否则不是单词表
   if (!/^[A-Za-z]/.test(line)) return null
@@ -131,7 +144,7 @@ function parseLine(line: string, book: string, freq: number): Word | null {
     const parts = line.split('|').map((s) => s.trim())
     const [word, mean, ipa] = parts
     if (isWord(word)) {
-      return build(word, mean, ipa, freq, book)
+      return createEntry(word, mean, ipa, freq, book)
     }
     return null
   }
@@ -140,26 +153,17 @@ function parseLine(line: string, book: string, freq: number): Word | null {
   const bracket = line.match(/^([A-Za-z][A-Za-z'\- ]*?)\s*\[([^\]]+)\]\s*(.*)$/)
   if (bracket) {
     const [, word, ipa, rest] = bracket
-    const defs = parseSenses(rest)
-    return makeWord(
-      {
-        word: word.trim(),
-        phonetic: `/${ipa.trim().replace(/^\/|\/$/g, '')}/`,
-        freq,
-        definitions: defs,
-      },
-      book,
-    )
+    return createEntry(word, rest, ipa, freq, book)
   }
 
   // 3) 制表符: word<TAB>释义 或 word<TAB>释义<TAB>音标
   if (line.includes('\t')) {
     const parts = line.split('\t').map((s) => s.trim())
     const [word, mean, ipa] = parts
-    if (isWord(word)) return build(word, mean, ipa, freq, book)
+    if (isWord(word)) return createEntry(word, mean, ipa, freq, book)
     // 也可能是 释义<TAB>单词
     if (parts.length >= 2 && isWord(parts[1])) {
-      return build(parts[1], parts[0], undefined, freq, book)
+      return createEntry(parts[1], parts[0], undefined, freq, book)
     }
     return null
   }
@@ -171,14 +175,14 @@ function parseLine(line: string, book: string, freq: number): Word | null {
   if (idx > 0) {
     const word = line.slice(0, idx).trim()
     const mean = line.slice(idx + 1).trim()
-    if (isWord(word) && mean) return build(word, mean, undefined, freq, book)
+    if (isWord(word) && mean) return createEntry(word, mean, undefined, freq, book)
   }
 
   // 5) 多空格分隔: word   释义（词本身可能含空格，贪婪匹配整段）
   const multi = line.match(/^([A-Za-z][A-Za-z'\-]*(?: [A-Za-z'\-]+)*?)\s{2,}(\S.*)$/)
   if (multi) {
     const [, word, mean] = multi
-    if (isWord(word)) return build(word, mean.trim(), undefined, freq, book)
+    if (isWord(word)) return createEntry(word, mean, undefined, freq, book)
   }
 
   // 6) 单空格 + 带词性标记的释义: "good adj. 好的" / "ice cream n. 冰淇淋"
@@ -188,14 +192,14 @@ function parseLine(line: string, book: string, freq: number): Word | null {
   )
   if (single) {
     const [, word, mean] = single
-    if (isWord(word)) return build(word, mean.trim(), undefined, freq, book)
+    if (isWord(word)) return createEntry(word, mean, undefined, freq, book)
   }
 
   // 7) 单空格 + 中文释义（无词性标记）: world 世界
   const cnSingle = line.match(/^([A-Za-z][A-Za-z'\-]*(?: [A-Za-z'\-]+)*?)\s+([\u4e00-\u9fff].*)$/)
   if (cnSingle) {
     const [, word, mean] = cnSingle
-    if (isWord(word)) return build(word, mean.trim(), undefined, freq, book)
+    if (isWord(word)) return createEntry(word, mean, undefined, freq, book)
   }
 
   // 8) 单空格 + 英文释义: abandon give up
@@ -203,27 +207,25 @@ function parseLine(line: string, book: string, freq: number): Word | null {
   if (enSingle) {
     const [, word, mean] = enSingle
     if (isWord(word) && mean.length >= 3) {
-      return build(word, mean.trim(), undefined, freq, book)
+      return createEntry(word, mean, undefined, freq, book)
     }
   }
 
   // 9) 纯单词
-  if (isWord(line)) {
-    return makeWord({ word: line.trim(), freq, definitions: [] }, book)
-  }
-
-  return null
+  return createEntry(line, undefined, undefined, freq, book)
 }
 
-function build(word: string, mean: string | undefined, ipa: string | undefined, freq: number, book: string): Word {
-  const defs = mean ? parseSenses(mean) : []
+function createEntry(word: string | undefined, mean: string | undefined, ipa: string | undefined, freq: number, book: string): Word | null {
+  if (!word || !isWord(word)) return null
+  const definitions = parseSenses(mean ?? '')
   const cleanedIpa = ipa ? ipa.trim().replace(/^\/|\/$/g, '') : ''
+  if (cleanedIpa.length > 198 || definitions.some(([, gloss]) => gloss.length > 2000)) return null
   return makeWord(
     {
-      word: word.trim(),
+      word: headword(word),
       phonetic: cleanedIpa ? `/${cleanedIpa}/` : '',
       freq,
-      definitions: defs,
+      definitions,
     },
     book,
   )
@@ -270,84 +272,62 @@ function normPos(tok: string): PartOfSpeech | '' {
     art: 'art.', n: 'n.', v: 'v.', vt: 'v.', vi: 'v.', a: 'adj.', adj: 'adj.',
     ad: 'adv.', adv: 'adv.', prep: 'prep.', conj: 'conj.', pron: 'pron.', num: 'num.', int: 'int.',
   }
-  return map[tok.toLowerCase()] ?? ''
+  const key = tok.trim().toLowerCase().replace(/\.$/, '')
+  return Object.hasOwn(map, key) ? map[key] : ''
 }
 
 /** 解析 JSON 词表 */
-function parseJson(text: string, book: string, freq: number): ParseResult | null {
+function parseJson(text: string, book: string, freq: number): ParseResult {
+  let data: unknown
   try {
-    const data = JSON.parse(text)
-    const arr = Array.isArray(data) ? data : Array.isArray(data?.words) ? data.words : null
-    if (!arr) return null
-
-    const words: Word[] = []
-    const seen = new Set<string>()
-    let skipped = 0
-
-    for (const item of arr) {
-      if (typeof item === 'string') {
-        const w = parseLine(item, book, freq)
-        if (w && !seen.has(w.word.toLowerCase())) {
-          seen.add(w.word.toLowerCase())
-          words.push(w)
-        } else if (!w) skipped += 1
-        continue
-      }
-
-      if (!item || typeof item !== 'object') {
-        skipped += 1
-        continue
-      }
-
-      const word = String(item.word ?? item.w ?? item.headword ?? item.term ?? '').trim()
-      if (!word || !/^[A-Za-z]/.test(word)) {
-        skipped += 1
-        continue
-      }
-
-      let defs: Sense[] = []
-      if (Array.isArray(item.definitions)) {
-        defs = item.definitions
-          .map((d: unknown) => {
-            if (Array.isArray(d)) return [String(d[0] ?? ''), String(d[1] ?? '')] as Sense
-            if (d && typeof d === 'object') {
-              const o = d as Record<string, unknown>
-              return [String(o.pos ?? o.partOfSpeech ?? ''), String(o.cn ?? o.meaning ?? o.definition ?? '')] as Sense
-            }
-            return null
-          })
-          .filter(Boolean) as Sense[]
-      }
-
-      if (defs.length === 0) {
-        const mean = item.mean ?? item.meaning ?? item.cn ?? item.translation ?? item.trans ?? item.definition
-        if (typeof mean === 'string') defs = parseSenses(mean)
-        else if (Array.isArray(mean)) defs = mean.map((m) => ['', String(m)] as Sense)
-      }
-
-      const key = word.toLowerCase()
-      if (seen.has(key)) continue
-      seen.add(key)
-
-      const ipaRaw = String(item.phonetic ?? item.ipa ?? item.phonetics ?? '').trim().replace(/^\/|\/$/g, '')
-      words.push(
-        makeWord(
-          {
-            word,
-            phonetic: ipaRaw ? `/${ipaRaw}/` : '',
-            freq: Number(item.freq ?? item.frequency ?? freq) || freq,
-            definitions: defs,
-            tip: item.tip ?? item.note ?? undefined,
-          },
-          book,
-        ),
-      )
-    }
-
-    return { words, skipped }
+    data = JSON.parse(text)
   } catch {
-    return null
+    return { words: [], skipped: 1 }
   }
+  const records: unknown[] = Array.isArray(data) ? data
+    : data && typeof data === 'object' && 'words' in data && Array.isArray(data.words) ? data.words : [data]
+  return gather(records.map(item => parseJsonEntry(item, book, freq)))
+}
+
+function asText(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : ''
+}
+
+function jsonSense(value: unknown): Sense | null {
+  const record = value as Record<string, unknown> | null
+  const [pos, gloss] = Array.isArray(value) ? value
+    : [record?.pos ?? record?.partOfSpeech, record?.cn ?? record?.meaning ?? record?.definition]
+  const text = asText(gloss)
+  return text ? [normPos(asText(pos)), text] : null
+}
+
+function parseJsonEntry(item: unknown, book: string, freq: number): Word | null {
+  if (typeof item === 'string') return parseLine(item, book, freq)
+  if (!item || typeof item !== 'object') return null
+  const record = item as Record<string, unknown>
+  const word = asText(record.word ?? record.w ?? record.headword ?? record.term)
+  if (!isWord(word)) return null
+
+  const rawSenses = record.definitions ?? record.d
+  const mean = record.mean ?? record.meaning ?? record.cn ?? record.translation ?? record.trans ?? record.definition
+  const senses = Array.isArray(rawSenses) ? rawSenses.map(jsonSense).filter(s => s !== null) : []
+  const definitions: Sense[] = senses.length ? senses
+    : Array.isArray(mean) ? mean.map(asText).filter(Boolean).map(value => ['', value])
+      : parseSenses(asText(mean))
+  const ipa = asText(record.phonetic ?? record.ipa ?? record.phonetics ?? record.p).replace(/^\/|\/$/g, '')
+  const rawFrequency = record.freq ?? record.frequency ?? record.f
+  const frequency = typeof rawFrequency === 'number' || typeof rawFrequency === 'string' ? Number(rawFrequency) : freq
+  const tip = asText(record.tip ?? record.note ?? record.y)
+  if (definitions.length > 40 || ipa.length > 198 || tip.length > 2000
+    || definitions.some(([, gloss]) => gloss.length > 2000)) return null
+
+  return makeWord({
+    word: headword(word),
+    phonetic: ipa ? `/${ipa}/` : '',
+    freq: Number.isFinite(frequency) ? frequency : freq,
+    definitions,
+    tip: tip || undefined,
+  }, book)
 }
 
 /** 导出为 CSV（用于备份/分享） */

@@ -30,9 +30,10 @@ export function waitVoices(timeout = 2000): Promise<SpeechSynthesisVoice[]> {
 /** 朗读一个单词或句子 */
 export function speak(
   text: string,
-  opts: { voice?: string; rate?: number; onEnd?: () => void } = {},
+  opts: { voice?: string; rate?: number; lang?: string; onEnd?: () => void; onError?: () => void } = {},
 ): void {
   if (typeof speechSynthesis === 'undefined' || typeof SpeechSynthesisUtterance === 'undefined') {
+    opts.onError?.()
     opts.onEnd?.()
     return
   }
@@ -40,62 +41,22 @@ export function speak(
   speechSynthesis.cancel()
 
   const u = new SpeechSynthesisUtterance(text)
-  u.lang = 'en-US'
+  u.lang = opts.lang ?? 'en-US'
   u.rate = opts.rate ?? 0.9
   const voices = listVoices()
-  const picked = opts.voice ? voices.find((v) => v.name === opts.voice) : voices[0]
+  const matching = voices.filter(v => v.lang.toLowerCase().replace('_', '-') === u.lang.toLowerCase())
+  const picked = voices.find(v => v.name === opts.voice)
+    ?? matching.find(v => v.localService) ?? matching[0] ?? voices.find(v => v.localService) ?? voices[0]
   if (picked) u.voice = picked
-  if (opts.onEnd) {
-    u.onend = () => opts.onEnd?.()
-    u.onerror = () => opts.onEnd?.()
+  u.onend = () => opts.onEnd?.()
+  u.onerror = event => {
+    if (event.error !== 'canceled' && event.error !== 'interrupted') opts.onError?.()
+    opts.onEnd?.()
   }
-  speechSynthesis.speak(u)
+  try { speechSynthesis.speak(u) }
+  catch { opts.onError?.(); opts.onEnd?.() }
 }
 
 export function stopSpeaking(): void {
   if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel()
-}
-
-/**
- * 判断用户输入是否匹配目标单词
- * 规则：忽略大小写、首尾空格、中英文标点、重复空格
- * @param strict 为 true 时要求完全一致（默写模式）
- */
-export function checkSpelling(input: string, target: string, strict = false): boolean {
-  const norm = (s: string) =>
-    s
-      .trim()
-      .toLowerCase()
-      .replace(/[.,!?;:'"()[\]{}·]/g, '')
-      .replace(/\s+/g, ' ')
-
-  const a = norm(input)
-  const b = norm(target)
-  if (!a) return false
-  if (strict) return a === b
-
-  // 宽松：忽略词与词之间的空格差异（如 "ice cream" vs "icecream"）
-  if (a === b) return true
-  return a.replace(/\s/g, '') === b.replace(/\s/g, '')
-}
-
-/**
- * 中文释义判分（汉译英/英译汉的翻译题）
- * 采用宽松包含匹配：命中关键义项即算对
- */
-export function checkChinese(input: string, definitions: [string, string][]): boolean {
-  const norm = (s: string) =>
-    s
-      .trim()
-      .toLowerCase()
-      .replace(/[\s，。、；：？！,.;:?!（）()【】\[\]"\u201c\u201d]/g, '')
-
-  const a = norm(input)
-  if (!a) return false
-
-  const senses = definitions.map(([, cn]) => norm(cn)).filter(Boolean)
-  if (senses.length === 0) return false
-
-  // 输入包含某个义项，或某个义项包含输入
-  return senses.some((s) => a.includes(s) || s.includes(a))
 }

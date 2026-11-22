@@ -38,22 +38,9 @@ export interface Word {
   tip?: string
 }
 
-export const BOOK_COLORS: Record<string, { bg: string; text: string; ring: string; dot: string }> = {
-  emerald: { bg: 'bg-emerald-50', text: 'text-emerald-700', ring: 'ring-emerald-200', dot: 'bg-emerald-500' },
-  sky: { bg: 'bg-sky-50', text: 'text-sky-700', ring: 'ring-sky-200', dot: 'bg-sky-500' },
-  indigo: { bg: 'bg-indigo-50', text: 'text-indigo-700', ring: 'ring-indigo-200', dot: 'bg-indigo-500' },
-  blue: { bg: 'bg-blue-50', text: 'text-blue-700', ring: 'ring-blue-200', dot: 'bg-blue-500' },
-  violet: { bg: 'bg-violet-50', text: 'text-violet-700', ring: 'ring-violet-200', dot: 'bg-violet-500' },
-  rose: { bg: 'bg-rose-50', text: 'text-rose-700', ring: 'ring-rose-200', dot: 'bg-rose-500' },
-  amber: { bg: 'bg-amber-50', text: 'text-amber-700', ring: 'ring-amber-200', dot: 'bg-amber-500' },
-}
-
 /**
  * 词书索引（静态引入，体积很小 ~1KB）
  * 注意：index.json 必须被 glob 排除，否则会被误判为词书分片
- */
-/**
- * 词书索引（静态引入，体积很小 ~1KB）
  */
 import BOOK_INDEX_RAW from './books/index.json'
 

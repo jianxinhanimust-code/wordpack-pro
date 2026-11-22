@@ -1,206 +1,184 @@
-/**
- * 主应用：页面切换 + 数据加载 + 底部导航
- */
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import type { BookMeta, Word } from '@/data/books'
-import { BOOK_INDEX, loadBook } from '@/data/books'
-import { buildQueue } from '@/core/srs'
-import type { PracticeMode } from '@/core/modes'
-import { idbGetAll } from '@/core/storage'
-import type { CustomBook } from '@/core/storage'
-import { initStore, updateSettings, useAppState } from '@/store'
-import { Home } from '@/components/Home'
-import { Practice } from '@/components/Practice'
-import { Stats } from '@/components/Stats'
-import { MyWords } from '@/components/MyWords'
-import { SettingsPage } from '@/components/SettingsPage'
+import { useEffect, useMemo, useState } from 'react'
+import { BookOpen, CircleAlert, Download, LoaderCircle, RotateCcw, Trash2 } from 'lucide-react'
+import type { Word } from '@/data/books'
+import { TOPIC, uniqueWords, useLibrary } from '@/data/library'
+import { getNote, meaningOf } from '@/data/editorial'
+import { dailySummary, getProgress, getQueue, localDay, skillOf } from '@/core/learning'
+import type { Exam, Mode, Preferences, Skill } from '@/core/schema'
+import { initVault, readRawRecord, resetVault, save, useVault } from '@/core/vault'
+import { Shell, paths } from '@/components/Shell'
+import type { Page } from '@/components/Shell'
+import { Dashboard } from '@/components/Dashboard'
+import { Pack } from '@/components/Pack'
+import { Study } from '@/components/Study'
+import { Collection } from '@/components/Collection'
+import { BooksPage, SettingsPage, downloadJson } from '@/components/LibraryPages'
+import { ReviewPage, StatsPage } from '@/components/ProgressPages'
 
-type Tab = 'home' | 'stats' | 'words' | 'settings'
-
-const TABS: { id: Tab; label: string; icon: string }[] = [
-  { id: 'home', label: '学习', icon: '📖' },
-  { id: 'stats', label: '统计', icon: '📊' },
-  { id: 'words', label: '词库', icon: '📚' },
-  { id: 'settings', label: '设置', icon: '⚙️' },
-]
-
-export default function App() {
-  const app = useAppState()
-  const [tab, setTab] = useState<Tab>('home')
-  const [practice, setPractice] = useState<PracticeMode | null>(null)
-  /** 练习会话开始时冻结的题目列表，保证一轮内题目稳定不变 */
-  const [sessionWords, setSessionWords] = useState<Word[] | null>(null)
-  const [customMeta, setCustomMeta] = useState<BookMeta[]>([])
-  const [wordsByBook, setWordsByBook] = useState<Map<string, Word[]>>(new Map())
-  const [loadingBook, setLoadingBook] = useState<string | null>(null)
-
-  const currentBook = app.settings.currentBook
-
-  useEffect(() => {
-    initStore()
-  }, [])
-
-  // 主题同步
-  useEffect(() => {
-    document.documentElement.classList.toggle('dark', app.settings.theme === 'dark')
-  }, [app.settings.theme])
-
-  // 加载自定义词书
-  const loadCustom = useCallback(async () => {
-    const list: CustomBook[] = await idbGetAll()
-    setCustomMeta(list.map((c) => c.meta))
-    setWordsByBook((prev) => {
-      const next = new Map(prev)
-      list.forEach((c) => next.set(c.id, c.words))
-      return next
-    })
-  }, [])
-
-  useEffect(() => {
-    void loadCustom()
-  }, [loadCustom])
-
-  // 内置词书分片懒加载（只加载当前词书）
-  useEffect(() => {
-    if (!app.ready) return
-    if (wordsByBook.has(currentBook)) return
-    const builtin = BOOK_INDEX.some((b) => b.id === currentBook)
-    if (!builtin) return
-
-    setLoadingBook(currentBook)
-    void loadBook(currentBook).then((words) => {
-      setWordsByBook((prev) => new Map(prev).set(currentBook, words))
-      setLoadingBook(null)
-    })
-  }, [app.ready, currentBook, wordsByBook])
-
-  const allBooks = useMemo(() => [...BOOK_INDEX, ...customMeta], [customMeta])
-
-  /** 生成练习队列：到期复习优先 + 每日新词 */
-  const queue = useMemo(() => {
-    const words = wordsByBook.get(currentBook) ?? []
-    if (words.length === 0) return []
-
-    const { newWords, reviewWords } = buildQueue(
-      app.progress,
-      words.map((w) => w.id),
-      app.settings.dailyNew,
-      app.settings.dailyReview,
-    )
-
-    const byId = new Map(words.map((w) => [w.id, w]))
-    const review = reviewWords.map((id) => byId.get(id)).filter(Boolean) as Word[]
-    const fresh = newWords.map((id) => byId.get(id)).filter(Boolean) as Word[]
-
-    return [...review, ...fresh].slice(0, app.settings.dailyNew + app.settings.dailyReview)
-  }, [app.progress, app.settings.dailyNew, app.settings.dailyReview, currentBook, wordsByBook])
-
-  const finishPractice = () => {
-    setPractice(null)
-    setSessionWords(null)
-  }
-
-  /**
-   * 开始练习：把当前队列快照下来，整个练习过程都用这份固定列表。
-   *
-   * 否则每答一题recordAnswer 都会更新 app.progress → 上面的 queue useMemo 重算 →
-   * 已答过的词从「待复习」变成「学习中」而退出队列 → words[cursor] 在会话中途变成
-   * 另一个词。表现就是：题目会自己变、同一题可能被重复作答、进度错乱。
-   */
-  const startPractice = useCallback(
-    (m: PracticeMode) => {
-      setSessionWords(queue)
-      setPractice(m)
-    },
-    [queue],
-  )
-
-  /* ------------------------------- 练习页 ------------------------------- */
-  if (practice) {
-    return (
-      <Practice
-        key={`${practice}-${currentBook}`}
-        mode={practice}
-        words={sessionWords ?? queue}
-        book={currentBook}
-        onFinish={finishPractice}
-        onExit={finishPractice}
-      />
-    )
-  }
-
-  /* ------------------------------- 主界面 ------------------------------- */
-  return (
-    <div className="min-h-dvh pb-20">
-      <header className="sticky top-0 z-10 border-b border-slate-100 bg-slate-50/85 backdrop-blur dark:border-slate-800 dark:bg-slate-950/85">
-        <div className="mx-auto flex h-14 max-w-3xl items-center justify-between px-4">
-          <div className="flex items-center gap-2">
-            <span className="text-lg">📖</span>
-            <span className="text-base font-bold tracking-tight">不背单词 Lite</span>
-          </div>
-          {app.streak > 0 && (
-            <span className="flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-600 dark:bg-amber-500/10 dark:text-amber-400">
-              🔥 {app.streak} 天
-            </span>
-          )}
-        </div>
-      </header>
-
-      <main className="mx-auto max-w-3xl px-4 py-4">
-        {loadingBook && <Loading text={`正在加载${BOOK_INDEX.find((b) => b.id === currentBook)?.name ?? '词书'}…`} />}
-
-        {!loadingBook && tab === 'home' && (
-          <Home
-            books={allBooks}
-            wordsByBook={wordsByBook}
-            onStart={startPractice}
-            onPickBook={(id) => updateSettings({ currentBook: id })}
-            onGoStats={() => setTab('stats')}
-          />
-        )}
-
-        {!loadingBook && tab === 'stats' && (
-          <Stats books={allBooks} wordsByBook={wordsByBook} currentBook={currentBook} />
-        )}
-
-        {!loadingBook && tab === 'words' && (
-          <MyWords
-            customBooks={customMeta}
-            wordsByBook={wordsByBook}
-            onBookChanged={(meta, words) => {
-              setCustomMeta((prev) => [...prev.filter((m) => m.id !== meta.id), meta])
-              setWordsByBook((prev) => new Map(prev).set(meta.id, words))
-            }}
-          />
-        )}
-
-        {tab === 'settings' && <SettingsPage onResetDone={() => window.location.reload()} />}
-      </main>
-
-      {/* 底部导航 */}
-      <nav className="safe-bottom fixed inset-x-0 bottom-0 z-10 border-t border-slate-200 bg-white/90 backdrop-blur dark:border-slate-800 dark:bg-slate-900/90">
-        <div className="mx-auto flex max-w-3xl items-stretch justify-around px-2 py-1.5">
-          {TABS.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
-              className={`nav-item flex-1 ${tab === t.id ? 'nav-item-active' : ''}`}
-            >
-              <span className="text-lg leading-none">{t.icon}</span>
-              <span>{t.label}</span>
-            </button>
-          ))}
-        </div>
-      </nav>
-    </div>
-  )
+const skills = ['recognition', 'spelling', 'listening'] as const
+type Session = { words: Word[]; mode: Mode; id: number }
+function readPage(): Page {
+  const name = window.location.hash.slice(1)
+  if (name === 'study') return 'review'
+  return Object.hasOwn(paths, name) ? name as Page : 'home'
 }
 
-function Loading({ text }: { text: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center py-24 text-slate-400">
-      <div className="mb-3 h-8 w-8 animate-spin rounded-full border-2 border-slate-200 border-t-brand-500 dark:border-slate-700" />
-      <div className="text-sm">{text}</div>
-    </div>
-  )
+export default function App() {
+  const { data, error, ready } = useVault()
+  const [page, setPage] = useState<Page>(readPage)
+  const [session, setSession] = useState<Session | null>(null)
+  const [now, setNow] = useState(() => new Date())
+  const [online, setOnline] = useState(navigator.onLine)
+  const [offlineReady, setOfflineReady] = useState(() => Boolean(navigator.serviceWorker?.controller))
+  const [systemReduced, setSystemReduced] = useState(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+  const [rescueNote, setRescueNote] = useState('')
+  const library = useLibrary(data, page === 'collection')
+  const { metadata, active, words, universe, memberships, loading } = library
+  const staticMotion = systemReduced || data.settings.motion !== 'full'
+  const remaining = Math.max(0, data.settings.dailyGoal - dailySummary(data, localDay(now), active.id).learned)
+  useEffect(() => { void initVault() }, [])
+  useEffect(() => {
+    const update = () => setNow(new Date())
+    const timer = window.setInterval(update, 15000)
+    const connectivity = () => setOnline(navigator.onLine)
+    const hash = () => {
+      setPage(readPage())
+      setSession(null)
+      update()
+      window.scrollTo(0, 0)
+    }
+    const media = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const motion = () => setSystemReduced(media.matches)
+    const offline = () => setOfflineReady(Boolean(navigator.serviceWorker?.controller))
+    window.addEventListener('hashchange', hash)
+    window.addEventListener('online', connectivity)
+    window.addEventListener('offline', connectivity)
+    window.addEventListener('focus', update)
+    navigator.serviceWorker?.addEventListener('controllerchange', offline)
+    media.addEventListener('change', motion)
+    return () => {
+      window.clearInterval(timer)
+      window.removeEventListener('hashchange', hash)
+      window.removeEventListener('online', connectivity)
+      window.removeEventListener('offline', connectivity)
+      window.removeEventListener('focus', update)
+      navigator.serviceWorker?.removeEventListener('controllerchange', offline)
+      media.removeEventListener('change', motion)
+    }
+  }, [])
+  useEffect(() => {
+    document.documentElement.dataset.theme = data.settings.theme
+    document.documentElement.dataset.motion = staticMotion ? 'reduced' : 'full'
+  }, [data.settings.theme, staticMotion])
+
+  const mustReview = useMemo(() => {
+    const count: Record<Skill, number> = { recognition: 0, spelling: 0, listening: 0 }
+    for (const word of words) {
+      const progress = getProgress(data, word.word)
+      if (!progress) continue
+      for (const skill of skills) {
+        const track = progress[skill]
+        if (track && Date.parse(track.card.due) <= now.getTime()) count[skill]++
+      }
+    }
+    return count
+  }, [data, now, words])
+  const misses = useMemo(() => words.filter(word => {
+    const state = getProgress(data, word.word)
+    return state && skills.some(skill => (state[skill]?.errors ?? 0) > 0)
+  }).sort((a, b) => {
+    const missed = (word: Word) => skills.reduce((total, skill) => total + (getProgress(data, word.word)?.[skill]?.errors ?? 0), 0)
+    return missed(b) - missed(a)
+  }), [words, data])
+  const totalDue = Object.values(mustReview).reduce((total, count) => total + count, 0)
+
+  function go(next: Page) {
+    if (next !== 'study') setSession(null)
+    setPage(next)
+    if (window.location.hash !== '#' + next) window.history.pushState(null, '', '#' + next)
+    setNow(new Date())
+    window.scrollTo(0, 0)
+  }
+  const begin = (mode: Mode, chosen: Word[]) => {
+    setSession({ words: chosen, mode, id: Date.now() })
+    go('study')
+  }
+  const update = async (patch: Partial<Preferences>) => {
+    await save(current => ({ ...current, settings: { ...current.settings, ...patch } }))
+  }
+  const selectExam = (exam: Exam) => update({ book: exam, exam })
+  const selectBook = (book: string) => {
+    if (book === 'cet4' || book === 'cet6') return selectExam(book)
+    return update(book === TOPIC ? { book, exam: 'cet6' } : { book })
+  }
+  async function saveRawRecord() {
+    const raw = await readRawRecord()
+    if (!raw) { setRescueNote('没有找到可导出的原始记录。'); return }
+    downloadJson(raw, 'wordpack-pro-raw.json')
+    setRescueNote('原始记录已下载。修复后再通过「导入恢复」载入。')
+  }
+  async function wipe() {
+    if (!window.confirm('清空本地学习记录后无法恢复。确定继续？')) return
+    try { await resetVault(); setRescueNote('') }
+    catch { setRescueNote('清空失败，请重试或下载原始记录后再处理。') }
+  }
+  const queue = (mode: Mode, cap: number, dueOnly: boolean) => {
+    const skill = skillOf(mode)
+    const allowed = (w: Word) => mode === 'context' ? Boolean(getNote(w.word))
+      : mode === 'spell' || mode === 'listen' ? Boolean(meaningOf(w)) : true
+    const selected = words.filter(allowed)
+    const reference = new Date()
+    const due = getQueue(selected, data, skill, reference, 0, Math.min(cap, data.settings.reviewLimit))
+    if (dueOnly || due.length >= cap) return due
+    const newWords = getQueue(selected, data, skill, reference,
+      Math.min(cap - due.length, skill === 'recognition' ? remaining : cap), 0)
+    return uniqueWords([...due, ...newWords])
+  }
+  function start(mode: Mode, dueOnly = false) {
+    if (mode === 'mistakes') { begin(mode, misses.slice(0, 15)); return }
+    begin(mode, queue(mode, dueOnly ? data.settings.reviewLimit : 12, dueOnly || mode === 'review'))
+  }
+
+  if (!ready) {
+    return <main className="boot-screen">
+      {error ? <>
+        <CircleAlert size={30}/>
+        <h1>无法打开本地学习记录</h1>
+        <p role="alert">{error}</p>
+        <p className="boot-hint">可以先导出原始记录留底，再决定是否清空重来。</p>
+        <div className="action-row">
+          <button className="secondary" onClick={() => window.location.reload()}><RotateCcw size={17}/>重试</button>
+          <button className="secondary" onClick={() => { void saveRawRecord() }}><Download size={17}/>下载原始记录</button>
+          <button className="danger" onClick={() => { void wipe() }}><Trash2 size={17}/>清空并重新开始</button>
+        </div>
+        {rescueNote && <p role="status">{rescueNote}</p>}
+      </> : <>
+        <LoaderCircle size={28} className="spin"/>
+        <h1>WordPack Pro</h1>
+        <p role="status">正在读取本地学习记录…</p>
+      </>}
+    </main>
+  }
+
+  const activePage = page === 'study' && !session ? 'review' : page
+  return <Shell page={activePage} active={active} go={go} online={online} due={totalDue}>
+    {library.error && <p role="alert" className="notice error"><CircleAlert size={17}/> 部分词库无法读取。请联网刷新，或打开已导入的本地词书。</p>}
+    {activePage === 'home' && <Dashboard active={active} data={data} now={now} due={totalDue} go={go} selectExam={selectExam}
+      start={mode => { if (!loading || totalDue) start(mode); else go('review') }}/>}
+    {activePage === 'pack' && (loading ? <div className="empty-state panel"><LoaderCircle className="spin"/>正在加载{active.name}…</div>
+      : <Pack words={queue('pack', 5, false)} active={active} settings={data.settings} collected={data.collected} reduced={staticMotion}
+        disabledMotion={data.settings.motion === 'off'} back={() => go('home')} learn={chosen => begin('pack', chosen)} choose={() => go('books')}/>)}
+    {activePage === 'study' && session && <Study key={session.id} words={session.words} mode={session.mode} pool={words} data={data}
+      staticMotion={staticMotion} back={() => go(session.mode === 'pack' ? 'home' : 'review')} finish={() => go('home')}
+      switchRecall={() => begin('recall', session.words)}/>}
+    {activePage === 'review' && (loading ? <div className="empty-state panel"><LoaderCircle className="spin"/>正在加载{active.name}…</div>
+      : <ReviewPage exam={data.settings.exam} book={active.name} due={mustReview} mistakes={misses.length} start={start}/>)}
+    {activePage === 'collection' && <Collection data={data} active={active.id} words={universe} books={metadata} memberships={memberships}
+      now={now} reduced={staticMotion} learn={word => begin('recall', [word])}/>}
+    {activePage === 'books' && <BooksPage active={active} data={data} books={metadata} select={selectBook}/>}
+    {activePage === 'stats' && <StatsPage data={data} now={now} active={active} words={words}/>}
+    {activePage === 'settings' && <SettingsPage data={data} update={update} offlineReady={offlineReady} stats={() => go('stats')}/>}
+    {activePage === 'home' && active.totalCount === 0 && <button className="secondary" onClick={() => go('books')}>
+      <BookOpen size={17}/>为当前词书添加词汇</button>}
+  </Shell>
 }
