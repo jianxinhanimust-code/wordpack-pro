@@ -27,7 +27,10 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test
+      # 子路径必须等于仓库名，否则 GitHub Pages 上的资源会 404（白屏）
       - run: npm run build:pages
+        env:
+          PAGES_REPO: ${{ github.event.repository.name }}
       - run: touch dist/.nojekyll
       - uses: actions/upload-pages-artifact@v3
         with:
