@@ -1,251 +1,92 @@
-# 不背单词 Lite
+# WordPack Pro｜拆词记进阶版
 
-> 开源英语单词学习工具 · 浏览器 / 手机 / 电脑都能用
+面向大学英语四级和六级的本地优先英语词卡应用。使用 React、严格 TypeScript、Vite、ts-fsrs 和 IndexedDB。支持电脑浏览器和 Android 浏览器的响应式 PWA。
 
-一个参考「不背单词」产品思路实现的背单词应用：**纯前端、无需注册、数据只存在你自己设备上**。
-内置小学到 GRE 共 **26,400+ 词** 精选词库，四种练习模式，基于 **SM-2 记忆算法** 安排复习。
+## 运行
 
-### 🚀 在线体验
+需要 Node.js 22.12+ 或 24 LTS，以及 npm。请保留 npm 的平台可选依赖，Vite 使用其中的原生构建组件。
 
-**[https://theobservantdeveloper2026.github.io/not-back-words-lite/](https://theobservantdeveloper2026.github.io/not-back-words-lite/)**
+```powershell
+cd C:\Users\Hanji\WordPack-Pro
+npm ci
+npm run dev -- --host 127.0.0.1 --port 5173
+```
 
-无需注册，打开即用，学习进度保存在浏览器本地。手机上打开后可通过浏览器菜单「添加到主屏幕」，获得和原生 App 几乎一样的全屏体验。
+开发地址 [http://127.0.0.1:5173/](http://127.0.0.1:5173/)。用生产版本验证离线缓存。
 
-### 📦 客户端下载
+```powershell
+npm run build
+npm start
+```
 
-全部安装包在 **[Releases 页面](https://github.com/TheObservantDeveloper2026/not-back-words-lite/releases/latest)**。
+生产地址 [http://127.0.0.1:4173/](http://127.0.0.1:4173/)。发布时可将 `dist/` 上传至 HTTPS 静态站点。默认构建支持子路径。如果部署工具要求固定基路径，用 `PAGES_BASE=/path/` 配合 `npm run build:pages`。
 
-| 平台 | 文件 | 说明 |
-| --- | --- | --- |
-| 网页版 | — | 直接打开上面的网址，最推荐 |
-| Android | `NotBackWordsLite-1.0.1.apk` | 需在系统设置里允许「安装未知来源应用」 |
-| Windows | `NotBackWordsLite-Setup-1.0.1-x64.exe` | 安装版，可自选安装路径 |
-| Windows | `NotBackWordsLite-Portable-1.0.1-x64.exe` | 免安装版，双击即用 |
-| macOS / Linux | 见仓库 README | 需在对应系统上构建 |
+生产站点首次在线访问、Service Worker 安装完成后可以离线学习。Android Chrome 可从浏览器菜单安装，需从 HTTPS 或本机安全上下文打开。学习记录与站点的协议、域名和端口绑定，在开发预览与生产预览间可用 JSON 导出和恢复。
 
-> 安装包未做商业代码签名。Windows SmartScreen 可能提示「未知发布者」，选「更多信息 →仍要运行」；
-> Android 会提示来源未知，选择继续安装即可。
+## 手机与分享
 
----
+`npm start` 默认只绑定回环地址。要让同一局域网内的手机打开，用 `WORDPACK_HOST=0.0.0.0 npm start`，再访问电脑的局域网地址，例如 `http://192.168.1.5:4173/`。
 
-## ✨ 功能
+局域网 HTTP 不是安全上下文：Service Worker 不会注册，因此**不能离线，也不能安装成独立应用**，只能加到桌面当快捷方式。要把链接发给别人、同时保留安装与离线能力，必须部署到 HTTPS 静态站点。仓库内的 `.github/workflows/deploy.yml` 在推送到 `main` 时自动构建并发布到 GitHub Pages；首次需要在仓库 Settings → Pages 把 Source 设为 GitHub Actions，地址形如 `https://<用户名>.github.io/<仓库名>/`。资源前缀由 `npm run build:pages` 按仓库名自动推导，仓库名与 `package.json` 的 `name` 不同时用 `PAGES_REPO=<仓库名>`。
 
-### 四种练习模式
+## 功能
 
-| 模式 | 说明 |
+- **四级与六级专区**从首页切换。四级有 3,847 词，使用蓝色词包，六级有 5,402 词，使用紫色词包。当前词书决定拆包、冲刺、复习以及默认图鉴和统计范围。同一词在两套词书中共享 FSRS 记忆状态，各词书的答题记录和今日新词目标按当前词书查看。
+- **拆包**支持连续拖动、封口形变、回弹、逐张 3D 翻转、鼠标与触控光泽、键盘或直接打开。可以跳过，或在偏好设置中降级动画、关闭动画和拆包音效。
+- **卡面纹样**有 16 类金属箔构图，包括拱门、水纹、蝶翼和棱镜。每个单词的种子决定构图、配色和细节，同一词在拆包、学习和图鉴中保持一致。手机端分两排展示，相关词由光束连接。点选任意卡片可放大并翻到背面查看释义，键盘方向键可切换卡片。
+- **学习**有四级与六级冲刺、快速认词、拼写、听音识词、听写、语境辨义和错词复测。分开调度认词、拼写及听音。Again、Hard、Good、Easy 对应 FSRS 评分，当前词书的到期任务优先。
+- **词书**有 CET-6 5,402 词、CET-4 3,847 词、33 词阅读专题、基础、中考、高考、TOEFL、GRE，以及独立的真题个人生词本。支持 TXT、CSV、TSV 文件内容和 JSON 导入。公共词书与个人词书可引用同一词的学习进度。
+- **图鉴**支持查词、词书筛选、单独收藏、词卡状态、历史评分和可平移缩放的共鸣关系。默认词包里的 `adapt`、`adopt` 可展示易混词共鸣。
+- **统计**包括新词、到期任务、趋势、连续学习、收藏成就和 FSRS 预估认词保持率。
+- **数据**自动保存在 IndexedDB。备份包含词书、设置、评分、收藏和 AI 内容反馈。恢复先校验，写入在同一事务内执行。
+
+词表接受 UTF-8 文本，例如：
+
+```csv
+word,meaning
+sustain,维持
+"coherent","连贯的，条理清楚的"
+```
+
+旧版不背单词 Lite 的 v1 JSON 可在设置中恢复。同一来源内的旧版本地进度也会在首次打开时尝试迁移。保留原 SM-2 数据、到期日、复习与错误次数，FSRS 难度和稳定性从旧数据估算，迁移前的评分历史以旧有汇总数据为准。浏览器清除站点数据会清除学习记录。
+
+## 可选 AI 辅导
+
+基础模块运行时无需配置 AI。在本机 `npm start` 之前为服务进程设置下列环境变量，通过单词详解中的 AI 学习助手主动提交请求。
+
+| 环境变量 | 用途 |
 | --- | --- |
-| **英译汉** | 看英文单词，选出正确的中文意思（干扰项优先取同词性，训练辨析能力） |
-| **汉译英** | 看中文释义，拼写出对应的英文单词 |
-| **默写** | 看释义 + 首字母和长度提示，完整拼写单词 |
-| **听写** | 只听发音（不显示单词），拼写听到的内容 |
+| `WORDPACK_AI_BASE_URL` | OpenAI 兼容基地址。OpenAI 默认是 `https://api.openai.com/v1`，DeepSeek 是 `https://api.deepseek.com` |
+| `WORDPACK_AI_MODEL` | 账户支持的模型标识 |
+| `WORDPACK_AI_API_KEY` | 仅注入服务端环境，客户端和备份均不含密钥 |
+| `WORDPACK_PORT` | 本地生产服务器端口，默认 4173 |
+| `WORDPACK_HOST` | 本地生产服务器绑定地址，默认 `127.0.0.1`。设为 `0.0.0.0` 后同一局域网内的手机可以访问，例如 `http://192.168.1.5:4173/` |
 
-### 内置词书（26,418 词）
+当前 AI 代理绑定本机回环接口。公网启用 AI 需要部署带鉴权、配额及服务端密钥管理的代理。静态部署可以独立使用基础学习功能。
 
-| 词书 | 词量 | 用途 |
-| --- | --- | --- |
-| 小学英语 | 441 | 入门起点 |
-| 中考英语 | 1,751 | 打基础首选 |
-| 高考英语 | 5,302 | 覆盖高中全部核心词 |
-| 大学英语四级 CET-4 | 4,529 | 四级大纲词汇 |
-| 大学英语六级 CET-6 | 2,164 | 六级进阶 |
-| TOEFL | 4,510 | 北美学术场景 |
-| GRE | 7,721 | 欧美名校申请 |
+## 检查
 
-每个词条都带**音标、词性、中文释义**，词书按需懒加载，首屏只加载当前词书。
-
-### 记忆引擎
-
-采用 **SM-2（SuperMemo 2）** 算法而非固定的艾宾浩斯间隔表：
-
-- 每个单词独立维护 **ease（难度系数）** 与 **interval（复习间隔）**
-- 答对 → 按 `interval × ease` 拉长下次复习时间
-- 答错 → 重置间隔、降低 ease，5 分钟后重新出现
-- 间隔超过 21 天自动判定为「已掌握」
-- 对总是记不住的词，算法会安排**更密集**的复习
-
-### 学习统计
-
-连续打卡天数、掌握度环形图、近 14 天学习趋势、记忆状态分布（未学 / 学习中 / 复习中 / 已掌握）、累计正确率。
-
-### 自定义词库
-
-支持粘贴文本或导入 `.txt` / `.csv` / `.json` 文件，兼容这些格式：
-
-```
-apple n. 苹果
-banana [bəˈnɑːnə] n. 香蕉
-hello,你好
-world 世界
-read | 阅读 | riːd
-ice cream n. 冰淇淋
-[{"word":"apple","mean":"苹果"}]
+```powershell
+npm test
+npm run typecheck
+npm run lint
+npm run build
+npm run test:e2e
+npm run test:offline
+npm run test:server
+npm audit
 ```
 
-也可以直接从 Excel 复制两列（制表符分隔）粘贴进来。
+端到端测试默认使用本机 Chrome。离线测试也可用 Playwright 下载的 Chromium，安装后设置 `WORDPACK_CHROMIUM=playwright`；端到端测试用 `PLAYWRIGHT_CHANNEL=chromium` 切换。详见 [开发与验收记录](BUILD-REPORT.md)。
 
-### 其他
+## 已知边界
 
-- 发音基于浏览器 Web Speech API，可选音色与语速，**无需联网**
-- 深色模式
-- 学习进度可导出为 JSON 备份 / 恢复
-- PWA：可「添加到主屏幕」当作独立应用使用
+- 四六级归类取自 ECDICT。阅读专题有 33 条自编用法例句和搭配，以及人工核对的共鸣关系。大词书其余条目以 ECDICT 释义和通用音标为主，部分无音标或没有英美双音标、例句和词源。
+- 发音使用系统英文语音。有离线声音包的设备可离线朗读，其他设备可能需要系统设置或联网。找不到可用语音时可切换到认词。
+- 148 条个人阅读生词原文件尚未提供，个人真题词本可从界面导入。
+- Android 已做浏览器尺寸与触摸模拟。实体机性能、安装引导和 APK 构建列入后续验收，当前环境无可用 Android SDK。
+- 后续词汇内容可补齐更多英美音标、真实语料和经校订的关联。跨设备同步暂未接入。
 
----
+## 上游与授权
 
-## 🚀 快速开始
-
-```bash
-git clone <your-repo-url>
-cd bbdict
-npm install
-npm run dev
-```
-
-浏览器打开 `http://localhost:5173`。
-
-其它命令：
-
-```bash
-npm run build       # 生产构建到 dist/
-npm run preview     # 本地预览构建产物
-npm test            # 跑单元测试（47 个）
-npm run typecheck   # TypeScript 类型检查
-npm run lint        # lint
-```
-
----
-
-## 📱 多端使用
-
-本项目是纯前端应用，**一套代码覆盖四个平台**。
-
-### 网页版
-
-线上已部署：**[GitHub Pages](https://theobservantdeveloper2026.github.io/not-back-words-lite/)**
-
-本地预览：
-
-```bash
-npm run build        # 构建（相对路径，可直接本地打开）
-npm run build:pages  # 构建（GitHub Pages 子路径前缀，自动识别仓库名）
-npm run preview      # 本地预览构建产物
-```
-
-`build:pages` 会自动从 `package.json` 的 name 或 git remote 推断仓库名，也可以手动指定：`PAGES_BASE=/custom/ npm run build:pages`。
-
-把 `dist/` 目录部署到任意静态托管即可：GitHub Pages、Vercel、Netlify、Cloudflare Pages、Nginx 均可。
-
-仓库内置 `.github/workflows/deploy.yml`，每次push 到 `main` 会自动跑单元测试、构建并发布到 GitHub Pages，无需手动操作。
-
-### 手机 / 平板（iOS + Android）
-
-两种方式：
-
-**方式一：PWA（最简单，无需打包）**
-
-用手机浏览器打开网页版 → Safari 点「分享 → 添加到主屏幕」/ Chrome 点「⋮ → 添加到主屏幕」。
-之后就像原生 App 一样全屏运行，数据保存在本地。
-
-**方式二：Capacitor 打包成原生 App**
-
-```bash
-npm install -D @capacitor/cli @capacitor/core @capacitor/android @capacitor/ios
-npm run cap:add:android     # 生成 Android 工程
-npm run cap:add:ios         # 生成 iOS 工程（需 macOS）
-
-# 之后用 Android Studio 打开 android/ 目录构建 APK
-# 用 Xcode 打开 ios/ 目录构建 IPA
-```
-
-Android 构建 APK：Android Studio → `Build → Build Bundle(s)/APK(s) → Build APK(s)`。
-iOS 构建 IPA 需要 macOS + Xcode + 苹果开发者账号。
-
-### Windows / macOS / Linux 桌面版
-
-用 Electron + electron-builder：
-
-```bash
-npm install -D electron electron-builder
-npm run dist:win     # 产出 NSIS 安装包 + 免安装 portable 版
-npm run dist:mac     # 产出 dmg / zip
-npm run dist:linux   # 产出 AppImage / deb
-```
-
-产物在 `release/` 目录。
-
----
-
-## 🏗️ 项目结构
-
-```
-src/
-├── core/
-│   ├── srs.ts           # SM-2 记忆调度算法
-│   ├── srs.test.ts      # 算法单元测试
-│   ├── storage.ts       # localStorage 进度 + IndexedDB 自定义词库
-│   ├── speech.ts        # 发音（TTS）与判分逻辑
-│   ├── import.ts        # 自定义词库解析（支持 7 种格式）
-│   ├── import.test.ts   # 解析器单元测试
-│   └── modes.ts         # 四种练习模式的定义与选项生成
-├── data/
-│   ├── books.ts         # 词书懒加载
-│   ├── books/*.json     # 词书分片（构建产物）
-│   └── types.ts
-├── components/
-│   ├── Home.tsx         # 首页：今日任务 + 词书进度
-│   ├── Practice.tsx     # 练习会话（核心组件）
-│   ├── Stats.tsx        # 学习统计
-│   ├── MyWords.tsx      # 收藏夹 + 自定义词库
-│   ├── SettingsPage.tsx # 设置
-│   └── ui.tsx           # 通用 UI 组件
-├── store.ts             # 全局状态（轻量自研 store）
-└── App.tsx
-
-scripts/
-├── parse_wordlists.py   # 源词表 -> 结构化 JSON
-├── build_books.py       # 生成词书分片
-└── make_icons.py        # 生成 PWA 图标
-
-electron/main.js         # 桌面版主进程
-capacitor.config.ts      # 手机 App 打包配置
-```
-
----
-
-## 🧠 记忆算法说明
-
-SM-2 核心规则（实现在 `src/core/srs.ts`）：
-
-| 答题结果 | 行为 |
-| --- | --- |
-| `again` | 重置 interval 为 0，ease − 0.25，5 分钟后重来 |
-| `hard` | interval × 1.2，ease − 0.05 |
-| `good` | 首次 1 天 → 第二次 6 天 → 之后 interval × ease |
-| `easy` | ease + 0.1，interval × ease × 1.15 |
-
-ease 范围限制在 `1.3 ~ 3.0`。
-
----
-
-## 📚 词库数据来源
-
-词库基于公开考试大纲词表整理，主要来自开源项目
-[`mahavivo/english-wordlists`](https://github.com/mahavivo/english-wordlists)（MIT License），
-覆盖中考词表、CET4/6、TOEFL、GRE、NPEE（高考）、小学大纲等原始文本。
-
-`scripts/parse_wordlists.py` 负责把各种格式不统一的原始词表解析成统一结构，
-包含词性识别、多义项拆分、跨书音标补全等处理。
-
-重新生成词库：
-
-```bash
-git clone https://github.com/mahavivo/english-wordlists.git /tmp/english-wordlists
-python scripts/parse_wordlists.py /tmp/english-wordlists ./src/data/_raw
-python scripts/build_books.py ./src/data/_raw/books.json ./src/data/books
-```
-
----
-
-## 📄 License
-
-MIT
+基于 [不背单词 Lite](https://github.com/TheObservantDeveloper2026/not-back-words-lite) 的 MIT 代码，词书改用同样采用 MIT 许可的 ECDICT。第三方归属见 [LICENSE](LICENSE)、[来源与许可](THIRD_PARTY_NOTICES.md) 和生产构建内的 `THIRD_PARTY_LICENSES.txt`。

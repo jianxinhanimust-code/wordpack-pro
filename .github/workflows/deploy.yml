@@ -1,17 +1,15 @@
-name: Deploy to GitHub Pages
+name: Deploy WordPack Pro to GitHub Pages
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
-# 允许 Pages 工作流写入部署权限
 permissions:
   contents: read
   pages: write
   id-token: write
 
-# 同一分支只保留最新一次部署，避免并发覆盖
 concurrency:
   group: pages
   cancel-in-progress: true
@@ -21,35 +19,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
-          # vitest 5 / vite 8 要求 Node ^22.12 || ^24|| >=26
           node-version: 22
           cache: npm
-
-      # 注意：不要用 --omit=optional。Vite 8 / rolldown 把平台相关的原生二进制
-      # （如 @rolldown/binding-linux-x64-gnu）放在 optionalDependencies 里，
-      # 跳过它们会导致 vitest 和 vite 直接报Cannot find module 而失败。
-      # Electron 的二进制体积大，用 ELECTRON_SKIP_BINARY_DOWNLOAD 跳过其下载即可。
-      - name: Install dependencies
-        run: npm ci
-        env:
-          ELECTRON_SKIP_BINARY_DOWNLOAD: 1
-
-      - name: Unit tests
-        run: npm test
-
-      - name: Build with Pages base path
-        run: npm run build:pages
-
-      - name: Disable Jekyll processing and 404 fallback
-        run: |
-          touch dist/.nojekyll
-          cp dist/index.html dist/404.html
-
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build:pages
+      - run: touch dist/.nojekyll
+      - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
 
@@ -60,6 +40,5 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Deploy to GitHub Pages
+      - uses: actions/deploy-pages@v4
         id: deployment
-        uses: actions/deploy-pages@v4
