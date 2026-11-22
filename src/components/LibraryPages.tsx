@@ -35,6 +35,34 @@ function makeId() {
 /** 微信/QQ 等内置浏览器：Web Speech 与「添加到主屏幕」都受限，提示用户换浏览器 */
 const isInAppBrowser = () => /MicroMessenger|QQ\/|Weibo|AlipayClient|baiduboxapp/i.test(navigator.userAgent)
 
+/** 从 UA 里认出常见浏览器，给用户看得懂的名字 */
+function browserLabel() {
+  const ua = navigator.userAgent
+  const known: Array<[RegExp, string]> = [
+    [/MicroMessenger/i, '微信内置浏览器'], [/MQQBrowser/i, 'QQ 浏览器'], [/UCBrowser/i, 'UC 浏览器'],
+    [/Quark/i, '夸克浏览器'], [/HuaweiBrowser/i, '华为浏览器'], [/MiuiBrowser/i, '小米浏览器'],
+    [/HeyTapBrowser|OppoBrowser/i, 'OPPO 浏览器'], [/VivoBrowser/i, 'vivo 浏览器'],
+    [/baiduboxapp/i, '百度 App'], [/Firefox/i, 'Firefox'], [/EdgA?\//i, 'Edge'],
+    [/SamsungBrowser/i, '三星浏览器'], [/CriOS|Chrome/i, 'Chrome'], [/Safari/i, 'Safari'],
+  ]
+  return known.find(([pattern]) => pattern.test(ua))?.[1] ?? '未知浏览器'
+}
+
+/** 语音相关的环境事实，供用户一键复制反馈 */
+function speechDiagnostics() {
+  const synth = typeof window !== 'undefined' ? window.speechSynthesis : undefined
+  return [
+    `浏览器: ${browserLabel()}`,
+    `UA: ${navigator.userAgent}`,
+    `speechSynthesis: ${typeof synth}`,
+    `SpeechSynthesisUtterance: ${typeof window.SpeechSynthesisUtterance}`,
+    `语音数量: ${synth && typeof synth.getVoices === 'function' ? synth.getVoices().length : '不可用'}`,
+    `安全上下文: ${window.isSecureContext}`,
+    `Service Worker: ${'serviceWorker' in navigator}`,
+    `Audio 构造函数: ${typeof Audio}`,
+  ].join('\n')
+}
+
 export function BooksPage({ data, active, books, select }: {
   data: Data; active: BookMeta; books: BookMeta[]; select: (id: string) => Promise<void>
 }) {
@@ -140,6 +168,7 @@ export function SettingsPage({ data, offlineReady, update, stats }: {
   const [error, setError] = useState('')
   const [voices, setVoices] = useState(listVoices)
   const [voiceCheck, setVoiceCheck] = useState(voiceReport)
+  const [copied, setCopied] = useState(false)
   const [pending, setPending] = useState<{ text: string; name: string } | null>(null)
   const [busy, setBusy] = useState(false)
   const [settings, optimistic] = useOptimistic(data.settings,
@@ -202,9 +231,14 @@ export function SettingsPage({ data, offlineReady, update, stats }: {
           <div><Pronounce text="Read a little every day." settings={settings} label="试听发音"/></div>
           <div className="field"><span>语音自检</span>
             <p className="muted" role="status">{voiceCheck.supported
-              ? `本机共有 ${voiceCheck.total} 个语音，其中英语 ${voiceCheck.english} 个。发音优先用站点自带的音频，系统语音只作兜底。`
-              : `当前浏览器没有提供语音合成接口（微信、QQ 等内置浏览器常见），发音会使用站点自带的音频，不影响使用。${isInAppBrowser() ? ' 想安装到主屏幕、用上系统语音，请改用 Chrome 或系统浏览器打开。' : ''}`}</p>
-            <button className="secondary" onClick={() => { setVoices(listVoices()); setVoiceCheck(voiceReport()) }}>重新检测</button>
+              ? `${browserLabel()} · 本机共有 ${voiceCheck.total} 个语音，其中英语 ${voiceCheck.english} 个。发音优先用站点自带的音频，系统语音只作兜底。`
+              : `${browserLabel()} 没有提供语音合成接口（部分安卓自带浏览器、夸克、UC 会裁掉这个能力），发音会使用站点自带的音频，不影响使用。${isInAppBrowser() ? ' 想安装到主屏幕、用上系统语音，请改用 Chrome 或系统浏览器打开。' : ''}`}</p>
+            <div className="action-row">
+              <button className="secondary" onClick={() => { setVoices(listVoices()); setVoiceCheck(voiceReport()) }}>重新检测</button>
+              <button className="secondary" onClick={() => {
+                void navigator.clipboard?.writeText(speechDiagnostics()).then(() => setCopied(true), () => setCopied(false))
+              }}>{copied ? '已复制' : '复制诊断信息'}</button>
+            </div>
           </div>
         </div>
       </section>
