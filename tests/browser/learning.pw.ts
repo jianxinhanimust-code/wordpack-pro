@@ -131,6 +131,11 @@ test('accessible open controls, animation off, pronunciation hook, and layout', 
     Object.defineProperty(window.speechSynthesis, 'speak', {
       value: (utterance: SpeechSynthesisUtterance) => { document.documentElement.dataset.spoken = utterance.text },
     })
+    // 无头 Chrome 默认没有英语语音，而应用会据此跳过系统 TTS 直接用站点音频；
+    // 这里给一个英语语音，让测试覆盖 TTS 这条路。
+    Object.defineProperty(window.speechSynthesis, 'getVoices', {
+      value: () => [{ name: 'Test English', lang: 'en-US', localService: true, default: true }],
+    })
   })
   const handle = await enterPack(page)
   if (!isMobile) {

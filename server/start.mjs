@@ -16,9 +16,12 @@ const contentTypes = new Map([
 ])
 
 // font-src must allow data: because Vite inlines the small font subsets as data URIs.
+// media-src allows the online pronunciation fallback (used only when the site has no
+// bundled audio for a word and the device has no English speech voice).
 // script-src and worker-src are stated explicitly so the service worker registration
 // never falls back through default-src with a console complaint.
 const csp = "default-src 'self'; script-src 'self'; worker-src 'self'; font-src 'self' data:; "
+  + "media-src 'self' https://dict.youdao.com; "
   + "frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; "
   + "img-src 'self' data:; style-src 'self' 'unsafe-inline'"
 

@@ -6,8 +6,9 @@ import type { Word } from '@/data/books'
 import { grades, mistakeSkill, ratingSchedule, recordRating, skillOf } from '@/core/learning'
 import { getNote, meaningOf } from '@/data/editorial'
 import { exactSpelling, makeChoices } from '@/core/practice'
-import { speak, speechFailureText, speechNeedsSetup, stopSpeaking } from '@/core/speech'
+import { speechFailureText, speechNeedsSetup } from '@/core/speech'
 import type { SpeechFailure } from '@/core/speech'
+import { pronounce, stopPronunciation } from '@/core/audio'
 import { save } from '@/core/vault'
 import { WordCard } from './WordCard'
 import { Pronounce, WordDetails } from './WordDetails'
@@ -41,7 +42,7 @@ export function Study({ mode, words, pool, data, staticMotion, back, finish, swi
   const [revision, setRevision] = useState(0)
   const [retry, setRetry] = useState<Word[] | null>(null)
   const queue = retry ?? words
-  useEffect(() => stopSpeaking, [])
+  useEffect(() => stopPronunciation, [])
   const word = queue[index]
   if (!word) return <div className="lesson-done panel">
     <div className="completion-gem"><Gem size={35}/></div><h1>{queue.length ? '本组学习完成' : '暂无可练习的词'}</h1>
@@ -60,7 +61,7 @@ export function Study({ mode, words, pool, data, staticMotion, back, finish, swi
     <progress className="session-progress" aria-label="本组学习进度" value={index} max={queue.length}/>
     <Question key={`${revision}:${index}`} word={word} mode={mode} pool={pool} data={data}
       staticMotion={staticMotion} switchRecall={switchRecall} onComplete={feedback => {
-        stopSpeaking()
+        stopPronunciation()
         if (feedback === 'again') setUnfamiliar(current => [...current, word])
         else setCorrect(value => value + 1)
         setIndex(value => value + 1)
@@ -97,8 +98,7 @@ function Question({ word, mode, pool, data, staticMotion, onComplete, switchReca
 
   function play() {
     setAudioError(null)
-    speak(word.word, { voice: data.settings.voice, rate: data.settings.rate, lang: data.settings.accent,
-      onError: setAudioError })
+    pronounce(word.word, data.settings, { onError: setAudioError })
   }
   function check() {
     const passes = exactSpelling(input, word.word)

@@ -58,6 +58,9 @@ coverage/
 # 参考站抓取产物（体积大，用 npm run capture:ref 按需重新生成）
 refs/
 
+# 发音合成的临时文件
+.audio-tmp/
+
 # 系统
 Thumbs.db
 ehthumbs.db

@@ -7,6 +7,7 @@ const cacheName = prefix + revision
 const shell = new URL('index.html', scope).href
 // 部署在子路径时（如 /wordpack-pro/）资源前缀也要跟着变
 const assetPrefix = new URL('assets/', scope).pathname
+const audioPrefix = new URL('audio/', scope).pathname
 const urls = new Set(assets.map(path =>
   new URL(path.split('/').map(encodeURIComponent).join('/'), scope).href))
 
@@ -33,8 +34,9 @@ self.addEventListener('fetch', event => {
   if (url.pathname.startsWith('/api/')) return
   const navigation = event.request.mode === 'navigate' && (url.pathname === new URL(scope).pathname
     || url.pathname === new URL(shell).pathname)
-  // Precached assets plus anything else the app has already pulled in (词书分片、字体).
-  const cacheable = navigation || urls.has(url.href) || url.pathname.startsWith(assetPrefix)
+  // Precached assets plus anything else the app has already pulled in (词书分片、发音音频).
+  const cacheable = navigation || urls.has(url.href)
+    || url.pathname.startsWith(assetPrefix) || url.pathname.startsWith(audioPrefix)
   if (!cacheable) return
   event.respondWith((async () => {
     const cache = await caches.open(cacheName)

@@ -17,6 +17,8 @@ const bundledLibraries = [
  */
 const optionalBooks = ['gre', 'toefl', 'npee', 'primary', 'primary_school']
 const optionalChunk = new RegExp(`^assets/(?:${optionalBooks.join('|')})-[\\w-]+\\.js$`)
+/** 词头发音按需加载，体积大且只有被点到的词才需要，不进预缓存 */
+const isAudio = (path: string) => path.startsWith('audio/')
 
 async function packageNotices(directory: string) {
   const files = ['LICENSE', 'THIRD_PARTY_NOTICES.md']
@@ -41,7 +43,8 @@ function offlineBuild(): Plugin {
         .filter(entry => entry.isFile())
         .map(entry => join(entry.parentPath, entry.name))
         .map(path => relative(directory, path).replaceAll('\\', '/'))
-        .filter(path => path !== 'offline-worker.js' && !path.endsWith('.map') && !optionalChunk.test(path))
+        .filter(path => path !== 'offline-worker.js' && !path.endsWith('.map')
+          && !optionalChunk.test(path) && !isAudio(path))
         .sort()
       if (!entries.includes('index.html')) throw Error('Production build has no offline shell.')
       const worker = await readFile(new URL('./scripts/offline-worker.js', import.meta.url), 'utf8')

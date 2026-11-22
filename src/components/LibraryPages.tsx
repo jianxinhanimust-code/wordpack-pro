@@ -199,8 +199,8 @@ export function SettingsPage({ data, offlineReady, update, stats }: {
           <div><Pronounce text="Read a little every day." settings={settings} label="试听发音"/></div>
           <div className="field"><span>语音自检</span>
             <p className="muted" role="status">{voiceCheck.supported
-              ? `本机共有 ${voiceCheck.total} 个语音，其中英语 ${voiceCheck.english} 个${voiceCheck.english ? '' : '（需要在系统「文字转语音」里安装英语语音包）'}。`
-              : '这个浏览器不支持语音合成。'}</p>
+              ? `本机共有 ${voiceCheck.total} 个语音，其中英语 ${voiceCheck.english} 个。发音优先用站点自带的音频，系统语音只作兜底。`
+              : '这个浏览器不支持语音合成，发音将使用站点自带的音频。'}</p>
             <button className="secondary" onClick={() => { setVoices(listVoices()); setVoiceCheck(voiceReport()) }}>重新检测</button>
           </div>
         </div>
