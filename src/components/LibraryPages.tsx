@@ -32,6 +32,9 @@ function makeId() {
   return 'custom-' + Date.now() + '-' + nonce
 }
 
+/** 微信/QQ 等内置浏览器：Web Speech 与「添加到主屏幕」都受限，提示用户换浏览器 */
+const isInAppBrowser = () => /MicroMessenger|QQ\/|Weibo|AlipayClient|baiduboxapp/i.test(navigator.userAgent)
+
 export function BooksPage({ data, active, books, select }: {
   data: Data; active: BookMeta; books: BookMeta[]; select: (id: string) => Promise<void>
 }) {
@@ -200,7 +203,7 @@ export function SettingsPage({ data, offlineReady, update, stats }: {
           <div className="field"><span>语音自检</span>
             <p className="muted" role="status">{voiceCheck.supported
               ? `本机共有 ${voiceCheck.total} 个语音，其中英语 ${voiceCheck.english} 个。发音优先用站点自带的音频，系统语音只作兜底。`
-              : '这个浏览器不支持语音合成，发音将使用站点自带的音频。'}</p>
+              : `当前浏览器没有提供语音合成接口（微信、QQ 等内置浏览器常见），发音会使用站点自带的音频，不影响使用。${isInAppBrowser() ? ' 想安装到主屏幕、用上系统语音，请改用 Chrome 或系统浏览器打开。' : ''}`}</p>
             <button className="secondary" onClick={() => { setVoices(listVoices()); setVoiceCheck(voiceReport()) }}>重新检测</button>
           </div>
         </div>
