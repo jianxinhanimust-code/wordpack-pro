@@ -26,6 +26,11 @@ self.addEventListener('activate', event => {
   })())
 })
 
+// 页面上的「有新版本，刷新」按钮会让新 worker 立刻接管
+self.addEventListener('message', event => {
+  if (event.data?.type === 'SKIP_WAITING') void self.skipWaiting()
+})
+
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return
   const url = new URL(event.request.url)
