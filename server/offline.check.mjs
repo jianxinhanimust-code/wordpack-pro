@@ -1,0 +1,62 @@
+import { once } from 'node:events'
+import assert from 'node:assert/strict'
+import { chromium } from 'playwright'
+import { createWordPackServer } from './start.mjs'
+
+const server = createWordPackServer({ env: {}, root: process.env.WORDPACK_CHECK_ROOT })
+server.listen(0, '127.0.0.1')
+await once(server, 'listening')
+const origin = `http://127.0.0.1:${server.address().port}`
+let browser
+try {
+  browser = await chromium.launch(process.env.WORDPACK_CHROMIUM === 'playwright' ? {} : { channel: 'chrome' })
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })
+  const page = await context.newPage()
+  await page.goto(origin)
+  await page.waitForFunction(() => Boolean(document.querySelector('#root')?.textContent?.trim()))
+  await page.waitForFunction(() => Boolean(navigator.serviceWorker.controller), undefined, { timeout: 30000 })
+
+  const precached = await page.evaluate(async () => {
+    const keys = (await caches.keys()).filter(key => key.startsWith('wordpack-pro:'))
+    if (keys.length !== 1) throw Error('expected one build cache')
+    return (await (await caches.open(keys[0])).keys()).map(request => new URL(request.url).pathname)
+  })
+  const book = precached.find(path => /^\/assets\/cet4-.*\.js$/.test(path))
+  assert.ok(book, 'a separate CET-4 book chunk is precached')
+  assert.ok(precached.includes('/foil-studio.webp'))
+  assert.ok(precached.includes('/manifest.webmanifest'))
+  assert.ok(!precached.some(path => path.startsWith('/api/')))
+
+  await context.setOffline(true)
+  await page.reload()
+  await page.waitForFunction(() => Boolean(document.querySelector('#root')?.textContent?.trim()))
+  const result = await page.evaluate(async bookPath => {
+    const [dictionary, art] = await Promise.all([fetch(bookPath), fetch('/foil-studio.webp')])
+    return {
+      wordBookAvailable: dictionary.ok && (await dictionary.text()).length > 1000,
+      artworkAvailable: art.ok && art.headers.get('content-type') === 'image/webp',
+      aiUnavailable: await fetch('/api/ai').then(() => false, () => true),
+    }
+  }, book)
+  assert.deepEqual(result, { wordBookAvailable: true, artworkAvailable: true, aiUnavailable: true })
+  await page.goto(`${origin}/#books`)
+  const cet4 = page.locator('.book-tile').filter({ has: page.getByRole('heading', { name: '大学英语四级' }) })
+  await cet4.getByRole('button', { name: '使用大学英语四级' }).click()
+  await cet4.getByText('正在使用', { exact: true }).waitFor()
+  await page.goto(origin)
+  await page.getByRole('button', { name: '开始拆包' }).click()
+  await page.getByRole('button', { name: '直接打开' }).click()
+  await page.getByRole('button', { name: '开始学习' }).click()
+  await page.getByRole('button', { name: '查看答案' }).click()
+  await page.locator('button.rating.good').click()
+  await page.getByRole('button', { name: '查看答案' }).waitFor()
+  await page.goto(origin)
+  const count = page.locator('.metric').filter({ hasText: '今日新词' }).locator('.metric-count')
+  await count.waitFor()
+  assert.match(await count.innerText(), /^1\s*\/\s*12$/)
+  console.log(`PWA test passed with ${precached.length} precached files. Offline reload, CET-4 switch, card reveal, and session save passed.`)
+} finally {
+  await browser?.close()
+  server.closeAllConnections()
+  await new Promise(resolve => server.close(resolve))
+}
