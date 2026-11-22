@@ -141,7 +141,8 @@ p { line-height: 1.65; }
 .mobile-brand, .mobile-nav { display: none; }
 #main { margin: 0 auto; max-width: 1440px; padding: 34px clamp(20px, 3.35vw, 54px) 34px; }
 
-.page-heading { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin: 0 0 23px; }
+.page-heading { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin: 0 0 23px; flex-wrap: wrap; }
+.page-heading > div { min-width: 0; }
 .page-heading h1 { font-size: clamp(26px, 3.05vw, 39px); letter-spacing: -.04em; line-height: 1.18; font-weight: 800; }
 .page-heading p { margin-top: 8px; color: var(--muted); font-size: 13px; }
 .home-heading { align-items: center; margin-bottom: 17px; }
@@ -160,7 +161,7 @@ p { line-height: 1.65; }
 .secondary:not(:disabled):hover { color: var(--accent); border-color: var(--accent-strong); }
 .text-button { min-height: 36px; color: var(--muted); padding: 4px 0; justify-content: flex-start; }
 .text-button:not(:disabled):hover { color: var(--accent); }
-.pill { min-height: 39px; color: var(--muted); border-color: var(--line); background: var(--panel); border-radius: 9px; padding: 7px 10px; }
+.pill { min-height: 39px; color: var(--muted); border-color: var(--line); background: var(--panel); border-radius: 9px; padding: 7px 10px; white-space: nowrap; max-width: 100%; }
 button.pill:hover { color: var(--accent); border-color: var(--accent-strong); }
 .pill svg:first-child { color: var(--accent); }
 .book-picker { flex-shrink: 0; }
@@ -335,6 +336,8 @@ textarea { min-height: 90px; resize: vertical; }
 input::placeholder, textarea::placeholder { color: var(--soft); }
 input[type='checkbox'], input[type='radio'], input[type='range'] { accent-color: var(--accent-strong); }
 .field { display: grid; align-content: start; gap: 7px; min-width: 0; color: var(--muted); font-size: 13px; }
+/* 字段里的按钮不要被 grid 拉满整列 */
+.field > button { justify-self: start; }
 .field select, .field textarea { width: 100%; }
 .form-grid .wide, .form-grid .full { grid-column: 1 / -1; }
 .form-actions, .button-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 13px; }
@@ -365,7 +368,7 @@ input[type='checkbox'], input[type='radio'], input[type='range'] { accent-color:
   align-items: center; gap: clamp(20px, 4vw, 42px); padding: clamp(19px, 4vw, 40px);
 }
 .question-visual { perspective: 700px; min-width: 0; }
-.question-visual .word-card { margin: auto; max-width: 250px; }
+.question-visual .word-card { margin: auto; max-width: 280px; }
 .question-main { min-width: 0; }
 .question-main h1 { font-size: 18px; color: var(--muted); margin-bottom: 13px; line-height: 1.5; font-weight: 650; }
 .question-main h1.question-label { display: inline-flex; gap: 7px; align-items: center; font-size: 13px; color: var(--accent); }
@@ -521,8 +524,19 @@ input[type='checkbox'], input[type='radio'], input[type='range'] { accent-color:
 .form-panel h2 svg { color: var(--accent); }
 .form-panel p, .modal-inner > p { font-size: 13px; color: var(--muted); }
 .form-panel .muted { margin-top: 7px; }
-.toggle { display: flex; align-items: center; align-self: center; gap: 5px; font-size: 13px; }
-.toggle input { width: 17px; height: 17px; margin: 0 4px 0 0; }
+.toggle { display: flex; align-items: center; align-self: center; gap: 8px; font-size: 13px; cursor: pointer; }
+/* 开关样式，和整体深色卡片一致（原生 checkbox 在这套配色里太跳） */
+.toggle input {
+  appearance: none; width: 36px; height: 20px; margin: 0; border-radius: 999px; flex: 0 0 auto;
+  background: var(--line-soft); border: 1px solid var(--line); position: relative; cursor: pointer;
+  transition: background .16s ease, border-color .16s ease;
+}
+.toggle input::after {
+  content: ''; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%;
+  background: var(--soft); transition: transform .16s ease, background .16s ease;
+}
+.toggle input:checked { background: var(--accent-strong); border-color: var(--accent-strong); }
+.toggle input:checked::after { transform: translateX(16px); background: #fff; }
 .file-button { position: relative; isolation: isolate; cursor: pointer; }
 .file-button input[type='file'] { opacity: 0; cursor: pointer; position: absolute; inset: 0; width: 100%; }
 .file-button:focus-within { outline: 2px solid var(--accent); outline-offset: 3px; }
@@ -612,6 +626,12 @@ input[type='file']::file-selector-button { color: var(--accent); background: var
 .trend-panel { margin: 17px 0; padding: clamp(12px, 3vw, 21px); }
 .trend-panel h2 { display: flex; align-items: center; gap: 7px; }
 .trend-panel h2 svg { color: var(--accent); }
+/* 14 天没有记录时不要留一块空网格 */
+.trend-empty {
+  display: grid; place-items: center; gap: 9px; min-height: 150px; padding: 18px; text-align: center;
+  color: var(--soft); font-size: 13px; border: 1px dashed var(--line); border-radius: 11px;
+}
+.trend-empty svg { color: var(--line); }
 .chart-legend { display: flex; gap: 10px; color: var(--muted); font-size: 11px; }
 .chart-legend span { display: flex; gap: 5px; align-items: center; white-space: nowrap; }
 .chart-legend span::before { content: ''; width: 8px; height: 8px; background: var(--accent-strong); border-radius: 2px; }

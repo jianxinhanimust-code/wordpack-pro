@@ -47,7 +47,9 @@ const achievements = [
   { title: '百词收藏', at: 100, text: '收藏 100 张不同词卡' },
 ] as const
 
-export function StatsPage({ data, now, active, words }: { data: Data; now: Date; active: BookMeta; words: Word[] }) {
+export function StatsPage({ data, now, active, words, onStart }: {
+  data: Data; now: Date; active: BookMeta; words: Word[]; onStart?: () => void
+}) {
   const [allBooks, setAllBooks] = useState(false)
   const keys = new Set(words.map(word => wordKey(word.word)))
   const scoped = allBooks ? data : {
@@ -73,6 +75,7 @@ export function StatsPage({ data, now, active, words }: { data: Data; now: Date;
     { icon: Flame, title: '连续学习', value: streak(scoped, now), suffix: '天', color: 'amber' },
     { icon: Brain, title: '认词预估保持率', value: retained === undefined ? '—' : Math.round(retained * 100), suffix: retained === undefined ? '' : '%', color: 'jade' },
   ] as const
+  const empty = chart.every(day => day.learned + day.reviews === 0)
   return <div className="standard-page">
     <div className="page-heading"><div><h1>学习统计</h1><p>{allBooks ? '全部词书' : active.name} · 练习趋势与认词保持率</p></div>
       <button className="secondary" aria-pressed={allBooks} onClick={() => setAllBooks(value => !value)}>
@@ -84,14 +87,18 @@ export function StatsPage({ data, now, active, words }: { data: Data; now: Date;
     <section className="panel trend-panel">
       <div className="section-heading"><h2><ChartNoAxesColumnIncreasing size={20}/> 近 14 天</h2>
         <div className="chart-legend"><span>新学</span><span>复习</span></div></div>
-      <div className="trend-chart" role="list" aria-label="最近 14 天的新学与复习次数">
-        {chart.map((day, i) => <div className="trend-column" role="listitem" key={day.key}
-          title={`${day.key}，新学 ${day.learned}，复习 ${day.reviews}`}>
-          <div className="bars" aria-label={`新学 ${day.learned}，复习 ${day.reviews}`}>
-            <i className="learned" style={{ height: (day.learned / max * 100) + '%' }}/><i className="reviewed" style={{ height: (day.reviews / max * 100) + '%' }}/>
-          </div><small>{i % 2 === 1 ? day.key.slice(5).replace('-', '/') : '\u00a0'}</small>
-        </div>)}
-      </div>
+      {empty
+        ? <div className="trend-empty"><ChartNoAxesColumnIncreasing size={26}/>
+          <span>最近 14 天还没有学习记录{onStart ? '，先拆一包，进度就会出现在这里。' : '。'}</span>
+          {onStart && <button className="secondary" onClick={onStart}>去拆一包</button>}</div>
+        : <div className="trend-chart" role="list" aria-label="最近 14 天的新学与复习次数">
+          {chart.map((day, i) => <div className="trend-column" role="listitem" key={day.key}
+            title={`${day.key}，新学 ${day.learned}，复习 ${day.reviews}`}>
+            <div className="bars" aria-label={`新学 ${day.learned}，复习 ${day.reviews}`}>
+              <i className="learned" style={{ height: (day.learned / max * 100) + '%' }}/><i className="reviewed" style={{ height: (day.reviews / max * 100) + '%' }}/>
+            </div><small>{i % 2 === 1 ? day.key.slice(5).replace('-', '/') : '\u00a0'}</small>
+          </div>)}
+        </div>}
     </section>
     <section><div className="section-heading"><h2>收藏成就</h2></div>
       <div className="book-grid">{achievements.map(a => <article key={a.at} className={`panel book-tile ${overallCollection >= a.at ? 'active-book' : ''}`}>

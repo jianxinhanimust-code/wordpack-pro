@@ -176,7 +176,7 @@ export default function App() {
     {activePage === 'collection' && <Collection data={data} active={active.id} words={universe} books={metadata} memberships={memberships}
       now={now} reduced={staticMotion} learn={word => begin('recall', [word])}/>}
     {activePage === 'books' && <BooksPage active={active} data={data} books={metadata} select={selectBook}/>}
-    {activePage === 'stats' && <StatsPage data={data} now={now} active={active} words={words}/>}
+    {activePage === 'stats' && <StatsPage data={data} now={now} active={active} words={words} onStart={() => go('pack')}/>}
     {activePage === 'settings' && <SettingsPage data={data} update={update} offlineReady={offlineReady} stats={() => go('stats')}/>}
     {activePage === 'home' && active.totalCount === 0 && <button className="secondary" onClick={() => go('books')}>
       <BookOpen size={17}/>为当前词书添加词汇</button>}
