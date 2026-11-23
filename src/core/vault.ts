@@ -126,16 +126,27 @@ export async function importBackup(file: string) {
   return save(() => imported)
 }
 
-export function collect(words: Word[]) {
-  return save(data => {
+export async function collect(words: Word[]) {
+  let added = 0
+  await save(data => {
     const now = Date.now()
     const collected = { ...data.collected }
     for (const word of words) {
       const id = wordKey(word.word)
-      if (!Object.hasOwn(collected, id)) collected[id] = now
+      if (!Object.hasOwn(collected, id)) {
+        collected[id] = now
+        added++
+      }
     }
     return { ...data, collected, packs: [...data.packs, now] }
   })
+  return added
+}
+
+export function toggleFavorite(word: string) {
+  const key = wordKey(word)
+  return save(data => ({ ...data, favorites: data.favorites.includes(key)
+    ? data.favorites.filter(item => item !== key) : [...data.favorites, key] }))
 }
 
 /**

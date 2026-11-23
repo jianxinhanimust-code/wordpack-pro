@@ -6,7 +6,7 @@ import type { Data, Skill } from '@/core/schema'
 import { wordKey } from '@/core/schema'
 import { getProgress, recallStatus } from '@/core/learning'
 import { meaningOf, other, related } from '@/data/editorial'
-import { save } from '@/core/vault'
+import { toggleFavorite } from '@/core/vault'
 import { cardDesign, rarities } from '@/core/cardArt'
 import type { Rarity } from '@/core/cardArt'
 import { WordCard } from './WordCard'
@@ -103,8 +103,7 @@ function CardProfile({ word, data, books, memberships, reduced, now, close, lear
     <div className="action-row">
       <button className="primary" onClick={learn}><BookOpen size={17}/>练习这个词</button>
       <button className="secondary" aria-pressed={favorite} onClick={() => {
-        void save(current => ({ ...current, favorites: current.favorites.includes(id) ? current.favorites.filter(x => x !== id) : [...current.favorites, id] }))
-          .catch(() => setMessage('收藏保存失败，请重试。'))
+        void toggleFavorite(id).catch(() => setMessage('收藏保存失败，请重试。'))
       }}><Star size={16} fill={favorite ? 'currentColor' : 'none'}/>{favorite ? '已特别收藏' : '特别收藏'}</button>
     </div>
     {message && <p className="notice error" role="alert">{message}</p>}

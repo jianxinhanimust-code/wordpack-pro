@@ -87,6 +87,7 @@ const legacy = z.object({
 export const dataSchema = z.object({
   version: z.literal(2), settings, progress: z.record(key, progress),
   history: z.array(event), collected: z.record(key, timestamp), favorites: z.array(key),
+  dailyChallenges: z.record(bookKey, z.object({ day: z.iso.date(), word: key, answer: key })).optional(),
   books: z.array(customBook).refine(b => new Set(b.map(x => x.id)).size === b.length),
   packs: z.array(timestamp), aiFeedback: z.array(z.object({
     word: key, at: timestamp, note: z.string().min(1).max(500),

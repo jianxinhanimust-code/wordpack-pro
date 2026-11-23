@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { ArrowDownRight, ArrowRight, AudioLines, BookOpen, Brain, CalendarDays, ChevronRight,
   CircleHelp, Flame, Hourglass, Keyboard, Layers3, PackageOpen, Sparkles, Target } from 'lucide-react'
-import type { BookMeta } from '@/data/books'
+import type { BookMeta, Word } from '@/data/books'
 import type { Data, Exam, Mode } from '@/core/schema'
 import { dailySummary, localDay, streak } from '@/core/learning'
 import type { Page } from './Shell'
 import { CollectorCover } from './CollectorCover'
+import { DailyChallenge, Showcase } from './HomeActivity'
 
 const training = [
   { mode: 'sprint', name: '六级冲刺', icon: Target, subtitle: '释义、搭配与语境', color: 'violet' },
@@ -19,14 +20,16 @@ const examSections = [
   { id: 'cet6', label: '大学英语六级', code: 'CET-6', words: '六级词包' },
 ] as const
 
-export function Dashboard({ active, data, now, due, go, start, selectExam }: {
+export function Dashboard({ active, data, words, loading, reduced, now, due, go, start, learn, selectExam }: {
   active: BookMeta; data: Data; now: Date; due: number; go: (page: Page) => void; start: (mode: Mode) => void;
+  words: Word[]; loading: boolean; reduced: boolean; learn: (word: Word) => void;
   selectExam: (exam: Exam) => Promise<void>
 }) {
   const [switching, setSwitching] = useState<Exam | null>(null)
   const [error, setError] = useState(false)
   const exam = examSections.find(section => section.id === data.settings.exam) ?? examSections[1]
-  const summary = dailySummary(data, localDay(now), active.id)
+  const day = localDay(now)
+  const summary = dailySummary(data, day, active.id)
   const percent = Math.min(100, Math.round(summary.learned / data.settings.dailyGoal * 100))
   return <div className="dashboard">
     <div className="page-heading home-heading">
@@ -56,6 +59,10 @@ export function Dashboard({ active, data, now, due, go, start, selectExam }: {
         </div>
       </div>
     </section>
+    <div className="home-activity">
+      <DailyChallenge key={`${active.id}:${day}`} book={active.id} words={words} data={data} day={day} loading={loading} learn={learn}/>
+      <Showcase key={active.id} words={words} data={data} loading={loading} reduced={reduced} openGallery={() => go('collection')}/>
+    </div>
     <section aria-labelledby="today-heading" className="dashboard-section">
       <div className="section-heading"><h2 id="today-heading">今日进度</h2><button className="text-button" onClick={() => go('stats')}>查看统计<ChevronRight size={16}/></button></div>
       <div className="metrics">

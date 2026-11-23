@@ -19,6 +19,8 @@
 .viewer-header, .viewer-controls { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .viewer-header h2 { font-size: 17px; font-weight: 760; letter-spacing: -.016em; }
 .viewer-header .icon-button, .viewer-controls .icon-button { width: 44px; height: 44px; border-color: #d8cae526; background: #181321a6; }
+.viewer-tools { display: flex; gap: 6px; }
+.viewer-header .viewer-favorite[aria-pressed='true'] { color: #ffe1a1; border-color: #b58d4b; background: #302519; }
 .viewer-controls .icon-button:disabled { opacity: .39; }
 .viewer-display {
   display: grid; position: relative; place-items: center; isolation: isolate; padding: 16px 0 20px;

@@ -1,12 +1,13 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties, PointerEvent } from 'react'
-import { ArrowLeft, ArrowRight, ChevronsRight, FastForward, Gem, PackageOpen, Sparkles } from 'lucide-react'
+import { ArrowLeft, ArrowRight, ChevronsRight, FastForward, Gem, Layers3, PackageOpen, Sparkles } from 'lucide-react'
 import type { BookMeta, Word } from '@/data/books'
 import type { Preferences } from '@/core/schema'
 import { wordKey } from '@/core/schema'
 import { relations } from '@/data/editorial'
 import { collect } from '@/core/vault'
 import { foilSound } from '@/core/foilAudio'
+import { cardDesign, rarities } from '@/core/cardArt'
 import { WordCard } from './WordCard'
 import { CardViewer } from './CardViewer'
 import { StarBurst } from './StarBurst'
@@ -29,13 +30,14 @@ export function FoilDecor({ edition }: { edition: string }) {
   </>
 }
 
-export function Pack({ words, active, settings, collected, reduced, disabledMotion, back, learn, choose }: {
+export function Pack({ words, active, settings, collected, reduced, disabledMotion, back, learn, choose, openGallery }: {
   words: Word[]; active: BookMeta; settings: Preferences; reduced: boolean; disabledMotion: boolean;
   collected: Record<string, number>;
-  back: () => void; learn: (words: Word[]) => void; choose: () => void
+  back: () => void; learn: (words: Word[]) => void; choose: () => void; openGallery: () => void
 }) {
   const [phase, setPhase] = useState<Phase>('sealed')
   const [cards, setCards] = useState<Word[]>([])
+  const [newCount, setNewCount] = useState(0)
   const [skip, setSkip] = useState(false)
   const [error, setError] = useState('')
   const [dragging, setDragging] = useState(false)
@@ -60,6 +62,11 @@ export function Pack({ words, active, settings, collected, reduced, disabledMoti
   }), [cards, collected])
   const edges = useMemo(() => matches.map(match => match.edge), [matches])
   const linked = new Set(edges.flatMap(edge => [edge.from, edge.to]))
+  const rarityCounts = new Map<string, number>()
+  for (const word of cards) {
+    const rarity = cardDesign(word.word).identity?.rarity
+    if (rarity) rarityCounts.set(rarity, (rarityCounts.get(rarity) ?? 0) + 1)
+  }
   useEffect(() => {
     mounted.current = true
     return () => {
@@ -102,9 +109,10 @@ export function Pack({ words, active, settings, collected, reduced, disabledMoti
     if (settings.sound) foilSound('open')
     const selected = words.slice(0, 5)
     try {
-      await collect(selected)
+      const added = await collect(selected)
       if (!mounted.current) return
       setCards(selected)
+      setNewCount(added)
       if (disabledMotion) { learn(selected); return }
       if (skipRequested.current) setPhase('revealed')
       else transition.current = window.setTimeout(() => setPhase('revealed'), reduced ? 40 : 580)
@@ -218,6 +226,14 @@ export function Pack({ words, active, settings, collected, reduced, disabledMoti
         </div>
         {matches.length > 0 && <div className="resonance-note"><Sparkles size={16}/>
           词汇共鸣 · {matches.map(({ relation, edge }) => `${relation.a} × ${relation.b}（${relation.kind}${edge.to === undefined ? ' · 已收藏' : ''}）`).join('、')}</div>}
+        <div className="pack-receipt">
+          <div className="pack-receipt-count"><Layers3 size={16}/><strong>新入藏 {newCount} 张</strong></div>
+          <ul aria-label="本包稀有度">{Object.entries(rarities).map(([id, label]) => {
+            const count = rarityCounts.get(id)
+            return count ? <li key={id} data-rarity={id} title={label}>{id} <span>×{count}</span></li> : null
+          })}</ul>
+          <button type="button" className="text-button" onClick={openGallery}>查看本词书图鉴<ArrowRight size={15}/></button>
+        </div>
       </div>}
       <div className="pack-actions">
         {phase === 'sealed' && (words.length

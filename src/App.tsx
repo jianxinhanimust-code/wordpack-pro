@@ -163,11 +163,13 @@ export default function App() {
   const activePage = page === 'study' && !session ? 'review' : page
   return <Shell page={activePage} active={active} go={go} online={online} due={totalDue}>
     {library.error && <p role="alert" className="notice error"><CircleAlert size={17}/> 部分词库无法读取。请联网刷新，或打开已导入的本地词书。</p>}
-    {activePage === 'home' && <Dashboard active={active} data={data} now={now} due={totalDue} go={go} selectExam={selectExam}
+    {activePage === 'home' && <Dashboard active={active} data={data} words={words} loading={loading} reduced={staticMotion}
+      now={now} due={totalDue} go={go} selectExam={selectExam} learn={word => begin('recall', [word])}
       start={mode => { if (!loading || totalDue) start(mode); else go('review') }}/>}
     {activePage === 'pack' && (loading ? <div className="empty-state panel"><LoaderCircle className="spin"/>正在加载{active.name}…</div>
       : <Pack words={queue('pack', 5, false)} active={active} settings={data.settings} collected={data.collected} reduced={staticMotion}
-        disabledMotion={data.settings.motion === 'off'} back={() => go('home')} learn={chosen => begin('pack', chosen)} choose={() => go('books')}/>)}
+        disabledMotion={data.settings.motion === 'off'} back={() => go('home')} learn={chosen => begin('pack', chosen)}
+        choose={() => go('books')} openGallery={() => go('collection')}/>)}
     {activePage === 'study' && session && <Study key={session.id} words={session.words} mode={session.mode} pool={words} data={data}
       staticMotion={staticMotion} back={() => go(session.mode === 'pack' ? 'home' : 'review')} finish={() => go('home')}
       switchRecall={() => begin('recall', session.words)}/>}

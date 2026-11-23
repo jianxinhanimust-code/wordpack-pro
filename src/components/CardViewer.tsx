@@ -1,9 +1,11 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import type { CSSProperties, KeyboardEvent } from 'react'
-import { ArrowLeft, ArrowRight, RotateCw, X } from 'lucide-react'
+import { ArrowLeft, ArrowRight, RotateCw, Star, X } from 'lucide-react'
 import type { Word } from '@/data/books'
 import { getNote } from '@/data/editorial'
 import { cardDesign } from '@/core/cardArt'
+import { wordKey } from '@/core/schema'
+import { toggleFavorite, useVault } from '@/core/vault'
 import { WordCard } from './WordCard'
 import './CardViewer.css'
 
@@ -12,12 +14,16 @@ export function CardViewer({ cards, initial, reduced, onClose }: {
 }) {
   const [index, setIndex] = useState(initial)
   const [reversed, setReversed] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState(false)
+  const { data } = useVault()
   const dialog = useRef<HTMLDialogElement>(null)
   const card = useRef<HTMLButtonElement>(null)
   const pointerInside = useRef(false)
   const label = useId()
   const help = useId()
   const word = cards[index]
+  const favorite = data.favorites.includes(wordKey(word.word))
   const note = getNote(word.word)
   const senses = word.definitions.slice(0, 3)
   const palette = cardDesign(word.word).palette
@@ -44,6 +50,14 @@ export function CardViewer({ cards, initial, reduced, onClose }: {
     setReversed(false)
   }
 
+  async function markFavorite() {
+    setSaving(true)
+    setError(false)
+    try { await toggleFavorite(word.word) }
+    catch { setError(true) }
+    finally { setSaving(false) }
+  }
+
   function handleKeys(event: KeyboardEvent<HTMLDialogElement>) {
     if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
       event.preventDefault()
@@ -67,8 +81,13 @@ export function CardViewer({ cards, initial, reduced, onClose }: {
     <div className="viewer-content" style={finish}>
       <header className="viewer-header">
         <h2 id={label}>词卡预览</h2>
-        <button type="button" className="icon-button" aria-label="关闭词卡预览" onClick={onClose}><X size={18}/></button>
+        <div className="viewer-tools">
+          <button type="button" className="icon-button viewer-favorite" aria-label="特别收藏此词" aria-pressed={favorite}
+            disabled={saving} onClick={() => { void markFavorite() }}><Star size={18} fill={favorite ? 'currentColor' : 'none'}/></button>
+          <button type="button" className="icon-button" aria-label="关闭词卡预览" onClick={onClose}><X size={18}/></button>
+        </div>
       </header>
+      {error && <p className="notice error" role="alert">收藏保存失败，请重试。</p>}
       <div className="viewer-display">
         <button type="button" className="viewer-card" ref={card}
           aria-label={reversed ? '显示单词正面' : '翻看中文释义'} aria-describedby={help}
