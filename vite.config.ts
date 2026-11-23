@@ -27,7 +27,7 @@ async function packageNotices(directory: string) {
     const path = new URL(`./node_modules/${library}/LICENSE`, import.meta.url)
     return `=== ${library} ===\n\n${(await readFile(path, 'utf8')).trim()}`
   }))
-  const artwork = 'Artwork: foil-studio.webp and obsidian-stage.webp are original generated illustrations created for WordPack Pro. '
+  const artwork = 'Artwork: foil-studio.webp, obsidian-stage.webp and the WebP files in card-art/ are original generated illustrations created for WordPack Pro. '
     + 'The gem app mark and PWA icons were drawn for WordPack Pro.'
   await writeFile(join(directory, 'THIRD_PARTY_LICENSES.txt'), [artwork, ...licenses].join('\n\n') + '\n', 'utf8')
 }

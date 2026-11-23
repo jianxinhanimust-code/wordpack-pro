@@ -6,6 +6,10 @@ export const motifs = [
 ] as const
 type Motif = typeof motifs[number]
 
+export function illustrationUrl(name: Motif | 'card-back' | 'wing-subject') {
+  return `${import.meta.env.BASE_URL}card-art/${name}.webp`
+}
+
 const palettes = [
   { ink: '#191428', field: '#4b3470', light: '#e3c7ff', metal: '#af91ef' },
   { ink: '#0b2324', field: '#175c59', light: '#b6f4dc', metal: '#66d6bc' },
@@ -264,7 +268,7 @@ function engravingLight(ctx: CanvasRenderingContext2D, palette: Palette, offset 
   return { stroke, fill }
 }
 
-export function paintCard(canvas: HTMLCanvasElement, design: Design) {
+export function paintCard(canvas: HTMLCanvasElement, design: Design, illustrated = false) {
   const ctx = canvas.getContext('2d')
   if (!ctx) return
   ctx.setTransform(canvas.width / artWidth, 0, 0, canvas.height / artHeight, 0, 0)
@@ -294,13 +298,15 @@ export function paintCard(canvas: HTMLCanvasElement, design: Design) {
     ctx.globalAlpha = .1 + random() * .34
     ctx.fillRect(x, y, radius * 1.4, radius)
   }
-  ctx.save()
-  ctx.translate(100 + sway * .66, 109)
-  ctx.rotate(sway * .022)
-  const scale = .91 + (design.seed % 17) * .008
-  ctx.scale(scale, scale)
-  engravings[design.motif]({ ...pen, ...engravingLight(ctx, palette) })
-  ctx.restore()
+  if (!illustrated) {
+    ctx.save()
+    ctx.translate(100 + sway * .66, 109)
+    ctx.rotate(sway * .022)
+    const scale = .91 + (design.seed % 17) * .008
+    ctx.scale(scale, scale)
+    engravings[design.motif]({ ...pen, ...engravingLight(ctx, palette) })
+    ctx.restore()
+  }
   ctx.globalAlpha = 1
 }
 

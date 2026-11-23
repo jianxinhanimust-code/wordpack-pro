@@ -12,9 +12,13 @@ try {
   browser = await chromium.launch(process.env.WORDPACK_CHROMIUM === 'playwright' ? {} : { channel: 'chrome' })
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })
   const page = await context.newPage()
+  let mainNavigations = 0
+  page.on('framenavigated', frame => { if (frame === page.mainFrame()) mainNavigations += 1 })
   await page.goto(origin)
   await page.waitForFunction(() => Boolean(document.querySelector('#root')?.textContent?.trim()))
   await page.waitForFunction(() => Boolean(navigator.serviceWorker.controller), undefined, { timeout: 30000 })
+  await page.waitForLoadState('networkidle')
+  assert.equal(mainNavigations, 1, 'first offline-cache installation must not interrupt the current screen')
 
   const precached = await page.evaluate(async () => {
     const keys = (await caches.keys()).filter(key => key.startsWith('wordpack-pro:'))
@@ -27,6 +31,7 @@ try {
   assert.ok(!precached.some(path => /^\/assets\/(gre|toefl|npee|primary)-.*\.js$/.test(path)),
     'optional large books are not precached')
   assert.ok(precached.includes('/foil-studio.webp'))
+  assert.equal(precached.filter(path => path.startsWith('/card-art/')).length, 18)
   assert.ok(precached.includes('/manifest.webmanifest'))
   assert.ok(!precached.some(path => path.startsWith('/api/')))
 
@@ -34,7 +39,7 @@ try {
   await page.reload()
   await page.waitForFunction(() => Boolean(document.querySelector('#root')?.textContent?.trim()))
   const result = await page.evaluate(async bookPath => {
-    const [dictionary, art] = await Promise.all([fetch(bookPath), fetch('/foil-studio.webp')])
+    const [dictionary, art] = await Promise.all([fetch(bookPath), fetch('/card-art/wing-subject.webp')])
     return {
       wordBookAvailable: dictionary.ok && (await dictionary.text()).length > 1000,
       artworkAvailable: art.ok && art.headers.get('content-type') === 'image/webp',

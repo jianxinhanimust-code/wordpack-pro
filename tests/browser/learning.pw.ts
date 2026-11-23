@@ -52,6 +52,11 @@ test('cancel and complete a real tear, reveal stable card art, and persist FSRS'
   await expect(page.getByText('词汇共鸣', { exact: false }).first()).toBeVisible()
   const preview = page.locator('.reveal-front .word-card')
   await expect(preview).toHaveCount(5)
+  await expect(page.locator('.pack-starburst')).toBeVisible()
+  await expect(preview.locator('.card-illustration img')).toHaveCount(5)
+  await expect.poll(() => preview.locator('.card-illustration img').evaluateAll(images =>
+    images.every(node => node instanceof HTMLImageElement && node.complete && node.naturalWidth > 0))).toBe(true)
+  await expect(preview.filter({ hasText: 'adapt' })).toHaveAttribute('data-relief', 'true')
   const motifs = await preview.evaluateAll(cards => cards.map(card => (card as HTMLElement).dataset.motif))
   expect(new Set(motifs).size).toBe(5)
   await expect.poll(() => preview.locator('canvas').evaluateAll(images => new Set(images.map(image =>

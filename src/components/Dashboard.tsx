@@ -5,7 +5,7 @@ import type { BookMeta } from '@/data/books'
 import type { Data, Exam, Mode } from '@/core/schema'
 import { dailySummary, localDay, streak } from '@/core/learning'
 import type { Page } from './Shell'
-import { FoilDecor } from './Pack'
+import { CollectorCover } from './CollectorCover'
 
 const training = [
   { mode: 'sprint', name: '六级冲刺', icon: Target, subtitle: '释义、搭配与语境', color: 'violet' },
@@ -44,9 +44,7 @@ export function Dashboard({ active, data, now, due, go, start, selectExam }: {
     {error && <p className="notice error" role="alert">切换专区失败，请重试。</p>}
     <section className="hero" data-exam={exam.id} aria-labelledby="hero-title">
       <div className="hero-art" aria-hidden="true">
-        {exam.id === 'cet4' && <div className="hero-model">
-          <i className="hero-plinth"/><div className="foil-pack"><FoilDecor edition="CET–4"/></div>
-        </div>}
+        <CollectorCover exam={exam.id}/>
       </div>
       <div className="hero-content">
         <div className="hero-label"><Sparkles size={15}/> {exam.code}</div>

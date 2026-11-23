@@ -9,6 +9,7 @@ import { collect } from '@/core/vault'
 import { foilSound } from '@/core/foilAudio'
 import { WordCard } from './WordCard'
 import { CardViewer } from './CardViewer'
+import { StarBurst } from './StarBurst'
 
 type Phase = 'sealed' | 'opening' | 'revealed'
 type Edge = { id: string; from: number; to?: number }
@@ -41,8 +42,8 @@ export function Pack({ words, active, settings, collected, reduced, disabledMoti
   const [selectedCard, setSelectedCard] = useState<number | null>(null)
   const stage = useRef<HTMLDivElement>(null)
   const start = useRef<{ id: number; x: number; y: number; travel: number } | null>(null)
-  /** 词卡预览的触摸起点。只用来过滤滑动；打开动作统一交给 click。 */
   const previewTouch = useRef<{ id: number; index: number; x: number; y: number } | null>(null)
+  const previewFallback = useRef<number | undefined>(undefined)
   const hold = useRef(false)
   const skipRequested = useRef(false)
   const mounted = useRef(false)
@@ -64,6 +65,7 @@ export function Pack({ words, active, settings, collected, reduced, disabledMoti
     return () => {
       mounted.current = false
       window.clearTimeout(transition.current)
+      window.clearTimeout(previewFallback.current)
       cancelAnimationFrame(raf.current)
     }
   }, [])
@@ -159,6 +161,7 @@ export function Pack({ words, active, settings, collected, reduced, disabledMoti
     <section className={`pack-stage ${reduced ? 'pack-static' : ''} ${dragging ? 'dragging' : ''}`} ref={stage} data-phase={phase} data-exam={settings.exam}>
       <div className="stage-studio" aria-hidden="true"/>
       <div className="stage-light" aria-hidden="true"/>
+      {phase === 'revealed' && !reduced && !skip && <StarBurst/>}
       <div className="stage-title">
         <h1>{phase === 'revealed' ? '你的新词卡' : '拆开这一包'}</h1>
         <p>{phase === 'revealed' ? `${cards.length} 张词卡已收入图鉴 · 点选词卡预览`
@@ -175,17 +178,33 @@ export function Pack({ words, active, settings, collected, reduced, disabledMoti
       {phase === 'revealed' && <div className={`reveal-area ${skip ? 'skip' : ''}`}>
         <div className="reveal-deck">
           {cards.map((word, i) => <button type="button" className={`reveal-slot ${linked.has(i) ? 'linked-card' : ''}`}
-            key={word.id} style={{ '--index': i } as CSSProperties}
+            key={word.id} style={{ '--index': i, '--fan-offset': `${((cards.length - 1) / 2 - i) * 37}px`,
+              '--fan-angle': `${(i - (cards.length - 1) / 2) * 6}deg` } as CSSProperties}
             aria-label={`预览词卡 ${word.word}`}
             onPointerDown={event => {
+              window.clearTimeout(previewFallback.current)
               if (event.pointerType === 'touch' && event.isPrimary) {
                 previewTouch.current = { id: event.pointerId, index: i, x: event.clientX, y: event.clientY }
-              }
+              } else previewTouch.current = null
             }}
-            onPointerCancel={() => { previewTouch.current = null }}
+            onPointerUp={event => {
+              const touch = previewTouch.current
+              if (!touch || touch.id !== event.pointerId || touch.index !== i
+                || Math.hypot(event.clientX - touch.x, event.clientY - touch.y) >= 10) return
+              const button = event.currentTarget
+              // Chromium can suppress the compatibility click on the first tap after a tear.
+              // Give the browser's normal click priority, then recover a missing click.
+              previewFallback.current = window.setTimeout(() => {
+                previewTouch.current = null
+                inspect(button, i)
+              }, 95)
+            }}
+            onPointerCancel={() => {
+              previewTouch.current = null
+              window.clearTimeout(previewFallback.current)
+            }}
             onClick={event => {
-              // 只在 click 上打开预览。若在 pointerup 里打开，浏览器随后补发的 click 会落在
-              // 刚弹出的卡片上，导致预览一打开就翻到背面。滑动超过 10px 视为滚动，不打开。
+              window.clearTimeout(previewFallback.current)
               const touch = previewTouch.current
               previewTouch.current = null
               if (touch && touch.index === i

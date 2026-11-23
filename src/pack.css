@@ -23,6 +23,10 @@
   pointer-events: none; z-index: -1; position: absolute; left: 50%; top: 56%; width: min(83%, 540px); height: 215px;
   transform: translate(-50%, -12%); background: radial-gradient(ellipse, #ba91e23d, transparent 68%);
 }
+.pack-starburst {
+  position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%;
+  pointer-events: none; mix-blend-mode: screen;
+}
 .stage-title { position: relative; z-index: 1; display: grid; justify-items: center; gap: 8px; }
 .stage-title h1 { font-size: clamp(29px, 4vw, 49px); letter-spacing: -.06em; line-height: 1.1; }
 .stage-title p { color: #d6cce3; font-size: 13px; }
@@ -190,6 +194,39 @@
   mix-blend-mode: screen;
   opacity: .8;
 }
+.card-illustration, .card-subject {
+  position: absolute; pointer-events: none;
+}
+.card-illustration {
+  z-index: -1; inset: 0; overflow: hidden; opacity: 0;
+  transition: opacity .28s ease-out;
+}
+.word-card[data-artwork='true'] .card-illustration { opacity: 1; }
+.card-illustration img {
+  display: block; width: 100%; height: 100%; object-fit: cover;
+  transform: translate(var(--background-x, 0%), var(--background-y, 0%)) scale(1.105);
+  transition: transform .14s ease-out;
+}
+.card-illustration::after {
+  content: ''; position: absolute; inset: 0;
+  background:
+    linear-gradient(0deg, #090713 1%, #100b1bed 15%, #130b25a6 28%, transparent 57%),
+    linear-gradient(180deg, #100b2150 0%, transparent 19%),
+    radial-gradient(ellipse at 50% 38%, transparent 46%, #0b071b67 100%);
+}
+.card-subject {
+  z-index: -1; width: 89%; height: 62%; left: 5.5%; top: 8%;
+  object-fit: contain; opacity: 0; filter: drop-shadow(0 5px 10px #370d357d);
+  transform: translate(var(--subject-x, 0%), var(--subject-y, 0%));
+  transition: transform .13s ease-out, opacity .25s ease;
+}
+.word-card[data-relief='true'] .card-illustration {
+  background:
+    radial-gradient(ellipse at 51% 35%, #8c437956, transparent 61%),
+    url('/obsidian-stage.webp') calc(50% + var(--background-x, 0%)) calc(28% + var(--background-y, 0%)) / auto 110%;
+}
+.word-card[data-relief='true'] .card-illustration img { visibility: hidden; }
+.word-card[data-relief='true'] .card-subject { opacity: 1; }
 .card-art { display: block; position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .card-foil {
   position: absolute; z-index: 0; inset: 0; pointer-events: none;
@@ -199,6 +236,20 @@
     linear-gradient(var(--foil-angle), transparent 24%, #d5b6ff26 41%, #ffdca75c 49%, #fff8f78c 50%, #92e5e740 55%, #6a7ddc1f 63%, transparent 73%);
   mask-image: radial-gradient(ellipse at var(--px) var(--py), #000 0%, #0009 29%, transparent 69%);
 }
+.card-starlight {
+  position: absolute; z-index: 0; inset: 1%; pointer-events: none; opacity: .64;
+  mix-blend-mode: screen;
+  transform: translate(var(--stars-x, 0%), var(--stars-y, 0%));
+  background:
+    radial-gradient(circle at 16% 29%, #ffe9c4 0 .75px, #ffda7760 1.6px, transparent 3.3px),
+    radial-gradient(circle at 84% 16%, #fffdf3 0 .6px, #c8adff75 1.5px, transparent 3px),
+    radial-gradient(circle at 78% 58%, #ffffff 0 .48px, #ce9bff4d 1.4px, transparent 2.8px),
+    radial-gradient(circle at 10% 53%, #eff5ff 0 .58px, #b8bdf75e 1.5px, transparent 3.4px),
+    radial-gradient(circle at 90% 45%, #f8d6ff 0 .5px, transparent 2px),
+    radial-gradient(circle at 28% 12%, #f9daae 0 .55px, #ffe5aa4f 1.4px, transparent 2.5px);
+  transition: transform .15s ease-out;
+}
+.card-name { text-shadow: 0 1px 5px #090413, 0 1px 11px #090413; }
 .card-name {
   position: absolute; z-index: 1; inset: 74% 9% 6%; display: flex; flex-direction: column;
   justify-content: center; gap: 3%; text-align: center;
@@ -241,14 +292,22 @@
 .reveal-front .word-card { width: 100%; height: 100%; }
 .reveal-back {
   transform: rotateY(180deg); border: 1px solid #b98bef; border-radius: 10px; display: grid; place-items: center;
-  color: #ecd0ff; background: radial-gradient(ellipse, #754ca3, #231338 70%);
+  color: #ecd0ff;
+  background: radial-gradient(ellipse, #24172b00, #1c112d88 92%), url('/card-art/card-back.webp') center / cover;
   box-shadow: 0 13px 22px #100523b0, inset 0 0 0 4px #201331, inset 0 0 0 5px #b98be08a;
 }
 @keyframes flip-reveal {
-  0% { opacity: 0; transform: translate3d(0, 54px, -90px) rotateY(180deg) rotateZ(-7deg) scale(.76); }
-  34% { opacity: 1; transform: translate3d(0, -14px, 29px) rotateY(135deg) rotateZ(2deg) scale(.98); }
-  74% { transform: translate3d(0, -5px, 15px) rotateY(14deg) scale(1.016); }
+  0% { opacity: 0; transform: translate3d(var(--fan-offset, 0px), 73px, -112px) rotateY(180deg) rotateZ(var(--fan-angle, 0deg)) scale(.66); }
+  36% { opacity: 1; transform: translate3d(0, -20px, 31px) rotateY(123deg) rotateZ(var(--fan-angle, 0deg)) scale(.98); }
+  75% { transform: translate3d(0, -5px, 19px) rotateY(-8deg) scale(1.02); }
   100% { opacity: 1; transform: none; }
+}
+.reveal-front .card-foil {
+  animation: reveal-foil .65s ease-out calc(.32s + var(--index) * .125s) both;
+}
+@keyframes reveal-foil {
+  0%, 100% { opacity: var(--foil-strength); }
+  55% { opacity: .83; }
 }
 .resonance-layer { position: absolute; inset: 0; pointer-events: none; }
 .resonance-beam {

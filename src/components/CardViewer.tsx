@@ -14,6 +14,7 @@ export function CardViewer({ cards, initial, reduced, onClose }: {
   const [reversed, setReversed] = useState(false)
   const dialog = useRef<HTMLDialogElement>(null)
   const card = useRef<HTMLButtonElement>(null)
+  const pointerInside = useRef(false)
   const label = useId()
   const help = useId()
   const word = cards[index]
@@ -52,6 +53,16 @@ export function CardViewer({ cards, initial, reduced, onClose }: {
 
   return <dialog ref={dialog} className="card-viewer" aria-labelledby={label} data-reduced={reduced || undefined}
     onKeyDown={handleKeys} onCancel={event => { event.preventDefault(); onClose() }}
+    onPointerDownCapture={() => { pointerInside.current = true }}
+    onPointerCancelCapture={() => { pointerInside.current = false }}
+    onClickCapture={event => {
+      // A delayed compatibility click from opening the dialog is not a click on its controls.
+      if (event.detail > 0 && !pointerInside.current) {
+        event.preventDefault()
+        event.stopPropagation()
+      }
+      pointerInside.current = false
+    }}
     onClick={event => { if (event.target === event.currentTarget) onClose() }}>
     <div className="viewer-content" style={finish}>
       <header className="viewer-header">

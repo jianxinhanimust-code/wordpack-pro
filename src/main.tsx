@@ -15,9 +15,14 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator && window.isSecureConte
 
   // 新版本装好后提示刷新。没有这一步，已经打开着的页面会一直跑旧版本，
   // 表现就是「明明修好了，手机上还是旧行为」。
+  let controller = navigator.serviceWorker.controller
   let refreshing = false
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (refreshing) return
+    const previous = controller
+    controller = navigator.serviceWorker.controller
+    // The first installation claims the page while someone may already be tapping a control.
+    // Reload only when a new worker replaces one that was already controlling the page.
+    if (!previous || !controller || previous === controller || refreshing) return
     refreshing = true
     window.location.reload()
   })
