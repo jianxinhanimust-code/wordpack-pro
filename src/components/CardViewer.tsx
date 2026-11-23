@@ -1,12 +1,15 @@
 import { useEffect, useId, useRef, useState } from 'react'
-import type { CSSProperties, KeyboardEvent } from 'react'
+import type { KeyboardEvent } from 'react'
 import { ArrowLeft, ArrowRight, RotateCw, Star, X } from 'lucide-react'
 import type { Word } from '@/data/books'
 import { getNote } from '@/data/editorial'
 import { cardDesign } from '@/core/cardArt'
+import { effectStyle } from '@/core/cardEffects'
+import type { CardEffectStyle } from '@/core/cardEffects'
 import { wordKey } from '@/core/schema'
 import { toggleFavorite, useVault } from '@/core/vault'
 import { WordCard } from './WordCard'
+import { CardAtmosphere } from './CardAtmosphere'
 import './CardViewer.css'
 
 export function CardViewer({ cards, initial, reduced, onClose }: {
@@ -26,11 +29,12 @@ export function CardViewer({ cards, initial, reduced, onClose }: {
   const favorite = data.favorites.includes(wordKey(word.word))
   const note = getNote(word.word)
   const senses = word.definitions.slice(0, 3)
-  const { palette, identity } = cardDesign(word.word)
-  const finish = {
+  const { palette, identity, effect, seed } = cardDesign(word.word)
+  const finish: CardEffectStyle = {
+    ...effectStyle(effect),
     '--viewer-ink': palette.ink, '--viewer-glow': palette.metal,
     '--viewer-light': palette.light,
-  } as CSSProperties
+  }
 
   useEffect(() => {
     const modal = dialog.current
@@ -88,10 +92,11 @@ export function CardViewer({ cards, initial, reduced, onClose }: {
         </div>
       </header>
       {error && <p className="notice error" role="alert">收藏保存失败，请重试。</p>}
-      <div className="viewer-display" data-rarity={identity?.rarity}>
+      <div className="viewer-display" data-rarity={identity?.rarity} data-effect={effect}>
         <button type="button" className="viewer-card" ref={card}
           aria-label={reversed ? '显示单词正面' : '翻看中文释义'} aria-describedby={help}
           onClick={() => setReversed(value => !value)}>
+          {effect && identity && !reversed && <CardAtmosphere effect={effect} rarity={identity.rarity} seed={seed} reduced={reduced}/>}
           <span key={word.id} className="viewer-flip" data-reversed={reversed}>
             <span className="viewer-side viewer-front" aria-hidden={reversed}>
               <WordCard word={word} staticMotion={reduced}/>

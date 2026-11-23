@@ -1,12 +1,13 @@
 import { wordKey } from './schema'
 import { creatureByWord } from '@/data/creatures'
 import type { CreatureArt } from '@/data/creatures'
+import { effectForArt } from './cardEffects'
 
 export const motifs = [
   'arches', 'waters', 'tiles', 'wing', 'vessel', 'compass', 'phase', 'iris',
   'tree', 'summits', 'astrolabe', 'facet', 'hourglass', 'braid', 'shell', 'eclipse',
 ] as const
-type Motif = typeof motifs[number]
+export type Motif = typeof motifs[number]
 
 export const rarities = { N: '普通', R: '稀有', SR: '史诗', UR: '传说' } as const
 export type Rarity = keyof typeof rarities
@@ -73,6 +74,7 @@ export function cardDesign(text: string, concealed = false) {
   const identity: CardIdentity | null = concealed ? null : creature ?? identities[engraving]
   return {
     seed, motif, engraving, identity, series: creature?.series, fingerprint: motif + '-' + seed.toString(36),
+    effect: concealed ? undefined : effectForArt[motif],
     palette: palettes[concealed ? 0 : creature?.palette ?? entry?.[1] ?? ((seed >>> 7) % palettes.length)],
     frame: (seed >>> 17) % 3,
     layers: 4 + ((seed >>> 13) % 4),

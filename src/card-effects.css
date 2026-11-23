@@ -1,0 +1,107 @@
+.word-card[data-effect='water'] .card-rim {
+  --rim-light-pattern: repeating-conic-gradient(from var(--card-light-angle),
+    #1aa0be26 0deg, var(--effect-color) 19deg, var(--effect-glint) 32deg, transparent 55deg 83deg, var(--effect-accent) 120deg);
+}
+[data-effect='water'] {
+  --reveal-effect: radial-gradient(ellipse at 1% 30%, transparent 58%, var(--effect-glint) 63%, transparent 73%) 0 7% / 13% 63% no-repeat,
+    radial-gradient(ellipse at 99% 80%, transparent 62%, var(--effect-color) 65%, transparent 75%) 100% 88% / 13% 73% no-repeat;
+  --wake-x: 0px;
+  --wake-y: 8px;
+  --drift-period: 3.2s;
+}
+.word-card[data-effect='halo'] .card-rim {
+  --rim-light-pattern: conic-gradient(from var(--card-light-angle), transparent 3deg, var(--effect-color) 56deg, var(--effect-glint) 65deg,
+    var(--effect-accent) 88deg, transparent 125deg 174deg, var(--effect-color) 215deg, var(--effect-glint) 238deg, transparent 295deg);
+}
+[data-effect='halo'] {
+  --reveal-effect: radial-gradient(ellipse, transparent 52%, var(--effect-color) 57%, transparent 62%),
+    radial-gradient(ellipse, transparent 64%, var(--effect-glint) 66%, transparent 71%);
+  --drift-period: 6.8s;
+}
+.word-card[data-effect='arc'] .card-rim {
+  --rim-light-pattern: repeating-conic-gradient(from 18deg, transparent 0deg 24deg, var(--effect-accent) 28deg 31deg,
+    var(--effect-glint) 36deg, transparent 38deg 60deg);
+}
+[data-effect='arc'] {
+  --reveal-effect: linear-gradient(118deg, transparent 43%, var(--effect-glint) 47%, var(--effect-color) 49%, transparent 52%) 0 23% / 15% 30% no-repeat,
+    linear-gradient(54deg, transparent 42%, var(--effect-glint) 46%, var(--effect-color) 51%, transparent 55%) 100% 77% / 15% 33% no-repeat;
+  --wake-x: 5px;
+  --drift-period: 2.4s;
+}
+.word-card[data-effect='prism'] .card-rim {
+  --rim-light-pattern: conic-gradient(from var(--card-light-angle), var(--effect-color) 0deg, var(--effect-accent) 30deg,
+    var(--effect-glint) 33deg, transparent 58deg 99deg, var(--effect-accent) 110deg, var(--effect-color) 159deg,
+    var(--effect-glint) 167deg, transparent 192deg 230deg, var(--effect-color) 263deg, transparent 315deg);
+}
+[data-effect='prism'] {
+  --reveal-effect: conic-gradient(from 33deg, transparent, var(--effect-color), var(--effect-accent), transparent 75%) 0 19% / 12% 19% no-repeat,
+    conic-gradient(from 213deg, transparent, var(--effect-glint), var(--effect-accent), transparent 67%) 100% 80% / 12% 24% no-repeat;
+  --wake-x: -5px;
+}
+.word-card[data-effect='embers'] .card-rim {
+  --rim-light-pattern: linear-gradient(9deg, var(--effect-glint), var(--effect-color) 18%, transparent 34% 54%,
+    var(--effect-accent) 72%, transparent 95%);
+}
+[data-effect='embers'] {
+  --reveal-effect: radial-gradient(circle at 4% 61%, var(--effect-glint) 0 .95px, var(--effect-color) 2px, transparent 4px),
+    radial-gradient(circle at 97% 76%, var(--effect-glint) 0 1px, var(--effect-color) 2px, transparent 4px),
+    radial-gradient(circle at 96% 46%, var(--effect-color) 0 1px, transparent 4px),
+    radial-gradient(circle at 3% 90%, var(--effect-accent) 0 1.4px, transparent 5px),
+    radial-gradient(ellipse 57% 26% at 50% 100%, var(--effect-accent), transparent 86%);
+  --wake-y: 11px;
+  --drift-period: 3.5s;
+}
+.word-card[data-effect='mist'] .card-rim {
+  --rim-light-pattern: linear-gradient(153deg, transparent 10%, var(--effect-accent) 31%, transparent 45% 55%,
+    var(--effect-glint) 64%, var(--effect-color) 77%, transparent 95%);
+}
+[data-effect='mist'] {
+  --reveal-effect: radial-gradient(ellipse 12% 29% at 1% 49%, var(--effect-color), transparent 84%),
+    radial-gradient(ellipse 11% 23% at 98% 70%, var(--effect-accent), transparent 83%);
+  --wake-y: 6px;
+  --drift-period: 7s;
+}
+.word-card[data-effect='motes'] .card-rim {
+  --rim-light-pattern: conic-gradient(from 12deg, var(--effect-color), transparent 46deg 98deg, var(--effect-glint) 134deg,
+    transparent 156deg 252deg, var(--effect-accent) 284deg, transparent 325deg, var(--effect-color));
+}
+[data-effect='motes'] {
+  --reveal-effect: radial-gradient(circle at 3% 35%, var(--effect-glint) 0 1px, var(--effect-color) 2px, transparent 4px),
+    radial-gradient(circle at 98% 70%, var(--effect-glint) 0 1px, var(--effect-accent) 2px, transparent 5px),
+    radial-gradient(circle at 4% 73%, var(--effect-color) 0 1.5px, transparent 4px),
+    radial-gradient(circle at 97% 44%, var(--effect-glint) 0 1px, transparent 3px);
+  --wake-y: -5px;
+}
+
+.word-card[data-effect] .card-rim { background: var(--rim-light-pattern); }
+.viewer-front .word-card[data-effect='prism'][data-rarity='UR'] .card-rim { animation-duration: 7s; }
+.viewer-front .word-card[data-effect='water'] .card-rim { animation: rim-current 4s ease-in-out infinite alternate; }
+.viewer-front .word-card[data-effect='arc'] .card-rim { animation: rim-pulse 2.6s ease-in-out infinite; }
+.viewer-front .word-card:is([data-effect='embers'], [data-effect='mist'], [data-effect='motes']) .card-rim {
+  animation: rim-pulse 4.4s ease-in-out infinite;
+}
+@keyframes rim-current { from { --card-light-angle: -26deg; } to { --card-light-angle: 96deg; } }
+@keyframes rim-pulse { 0%, 100% { opacity: .5; } 49% { opacity: .9; } }
+
+.reveal-slot[data-effect]::after {
+  content: ''; position: absolute; inset: -5% -9%; z-index: -1; pointer-events: none;
+  background: var(--reveal-effect); opacity: .56;
+  animation: effect-arrive 1.36s ease-out calc(.25s + var(--index) * 125ms) backwards,
+    effect-drift var(--drift-period, 5.5s) ease-in-out calc(1.61s + var(--index) * 125ms) infinite alternate;
+}
+.reveal-slot[data-effect='halo']::after { inset: 11% -15%; }
+.reveal-slot[data-effect='mist']::after { filter: blur(2px); opacity: .47; }
+.reveal-slot[data-effect]:has(.word-card:is([data-rarity='SR'], [data-rarity='UR'])) {
+  --reveal-aura: color-mix(in srgb, var(--effect-color) 59%, transparent);
+}
+@keyframes effect-arrive {
+  0% { transform: translate(var(--wake-x, 0), var(--wake-y, 0)) scale(.88); opacity: 0; }
+  42% { opacity: .88; }
+  100% { transform: translate(0, 0) scale(1); }
+}
+@keyframes effect-drift {
+  from { transform: translate(0, 0) scale(1); }
+  to { transform: translate(calc(var(--wake-x, 0px) * -.45), calc(var(--wake-y, 0px) * -.55)) scale(1.045); opacity: .76; }
+}
+.reveal-area.skip .reveal-slot::after, .pack-static .reveal-slot::after,
+html[data-motion='reduced'] .word-card[data-effect] .card-rim { animation: none !important; }

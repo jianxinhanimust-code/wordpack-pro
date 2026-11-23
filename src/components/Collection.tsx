@@ -12,6 +12,7 @@ import { toggleFavorite } from '@/core/vault'
 import { cardDesign, illustrationUrl, rarities } from '@/core/cardArt'
 import type { Rarity } from '@/core/cardArt'
 import { WordCard } from './WordCard'
+import { CardAtmosphere } from './CardAtmosphere'
 import { WordDetails } from './WordDetails'
 import { Modal } from './LibraryPages'
 
@@ -131,8 +132,15 @@ function CardProfile({ word, data, books, memberships, reduced, now, close, lear
   const favorite = data.favorites.includes(id)
   const [message, setMessage] = useState('')
   const alternate = alternateCreature(id)
+  const { effect, identity, seed } = cardDesign(id)
   return <Modal title="词卡详情" close={close}>
-    <div className="profile-grid"><WordCard word={word} staticMotion={reduced}/><WordDetails word={word} settings={data.settings}/></div>
+    <div className="profile-grid">
+      <div className="profile-card">
+        {effect && identity && <CardAtmosphere effect={effect} rarity={identity.rarity} seed={seed} reduced={reduced}/>}
+        <WordCard word={word} staticMotion={reduced}/>
+      </div>
+      <WordDetails word={word} settings={data.settings}/>
+    </div>
     <div className="action-row">
       <button className="primary" onClick={learn}><BookOpen size={17}/>练习这个词</button>
       <button className="secondary" aria-pressed={favorite} onClick={() => {

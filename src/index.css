@@ -1,6 +1,7 @@
 @import '@fontsource-variable/manrope';
 @import '@fontsource/space-mono/latin-400.css';
 @import './pack.css';
+@import './card-effects.css';
 
 :root {
   color-scheme: dark;
@@ -637,7 +638,10 @@ input[type='file']::file-selector-button { color: var(--accent); background: var
 .pagination { margin-top: 18px; display: flex; align-items: center; justify-content: center; gap: 12px; }
 .pagination span { min-width: 59px; text-align: center; color: var(--muted); font: 12px var(--mono); }
 .profile-grid { display: grid; align-items: start; grid-template-columns: minmax(100px, .65fr) minmax(0, 1.35fr); gap: 18px; }
+.profile-card { position: relative; isolation: isolate; min-width: 0; max-width: 220px; }
+.profile-card .viewer-atmosphere { --aura-x: clamp(9px, 2vw, 22px); }
 .profile-grid .word-card { width: 100%; max-width: 220px; }
+.profile-card .word-card { z-index: 1; }
 .member-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
 .member-list .pill { min-height: 24px; padding: 4px 7px; font-size: 10px; }
 .profile-section { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }

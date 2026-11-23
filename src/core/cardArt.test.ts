@@ -50,4 +50,10 @@ describe('word card artwork', () => {
     expect(cardDesign('colossal')).toMatchObject({ motif: 'canyon-tortoise', series: 'exotic', identity: { rarity: 'UR' } })
     expect(alternateCreature('radiate')?.word).toBe('adhere')
   })
+
+  it('gives representative motifs distinct effects independently of rarity', () => {
+    expect(['transparent', 'eclipse', 'discharge', 'crystallize', 'radiate', 'evade', 'gather'].map(word => cardDesign(word).effect))
+      .toEqual(['water', 'halo', 'arc', 'prism', 'embers', 'mist', 'motes'])
+    expect(cardDesign('discharge', true).effect).toBeUndefined()
+  })
 })

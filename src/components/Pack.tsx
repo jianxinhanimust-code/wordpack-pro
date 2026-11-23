@@ -9,6 +9,8 @@ import { relations } from '@/data/editorial'
 import { collect } from '@/core/vault'
 import { foilSound } from '@/core/foilAudio'
 import { cardDesign, illustrationUrl, rarities } from '@/core/cardArt'
+import { effectStyle } from '@/core/cardEffects'
+import type { CardEffectStyle } from '@/core/cardEffects'
 import { WordCard } from './WordCard'
 import { CardViewer } from './CardViewer'
 import { StarBurst } from './StarBurst'
@@ -68,8 +70,9 @@ export function Pack({ words, active, settings, collected, reduced, disabledMoti
   const edges = useMemo(() => matches.map(match => match.edge), [matches])
   const linked = new Set(edges.flatMap(edge => [edge.from, edge.to]))
   const rarityCounts = new Map<string, number>()
-  for (const word of cards) {
-    const rarity = cardDesign(word.word).identity?.rarity
+  const designs = cards.map(word => cardDesign(word.word))
+  for (const design of designs) {
+    const rarity = design.identity?.rarity
     if (rarity) rarityCounts.set(rarity, (rarityCounts.get(rarity) ?? 0) + 1)
   }
   useEffect(() => {
@@ -219,8 +222,9 @@ export function Pack({ words, active, settings, collected, reduced, disabledMoti
       {phase === 'revealed' && <div className={`reveal-area ${skip ? 'skip' : ''}`}>
         <div className="reveal-deck">
           {cards.map((word, i) => <button type="button" className={`reveal-slot ${linked.has(i) ? 'linked-card' : ''}`}
-            key={word.id} style={{ '--index': i, '--fan-offset': `${((cards.length - 1) / 2 - i) * 37}px`,
-              '--fan-angle': `${(i - (cards.length - 1) / 2) * 6}deg` } as CSSProperties}
+            key={word.id} data-effect={designs[i].effect} style={{ ...effectStyle(designs[i].effect),
+              '--index': i, '--fan-offset': `${((cards.length - 1) / 2 - i) * 37}px`,
+              '--fan-angle': `${(i - (cards.length - 1) / 2) * 6}deg` } as CardEffectStyle}
             aria-label={`预览词卡 ${word.word}`}
             onPointerDown={event => {
               window.clearTimeout(previewFallback.current)

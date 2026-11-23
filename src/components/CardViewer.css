@@ -34,10 +34,14 @@
 .viewer-display:is([data-rarity='SR'], [data-rarity='UR'])::after {
   content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
   background: radial-gradient(ellipse 43% 55% at 50% 47%,
-    color-mix(in srgb, var(--rarity-metal) 44%, transparent), transparent 97%);
+    color-mix(in srgb, var(--effect-color, var(--rarity-metal)) 31%, transparent), transparent 97%);
 }
-.viewer-display[data-rarity='SR'] .viewer-front .word-card { box-shadow: 0 0 18px #d88fff9c, 0 0 40px #9f53d06b; }
-.viewer-display[data-rarity='UR'] .viewer-front .word-card { box-shadow: 0 0 22px #ffcb7cd2, 0 0 55px #ef994881; }
+.viewer-display[data-rarity='SR'] .viewer-front .word-card {
+  box-shadow: 0 0 13px color-mix(in srgb, var(--effect-color) 54%, transparent);
+}
+.viewer-display[data-rarity='UR'] .viewer-front .word-card {
+  box-shadow: 0 0 16px color-mix(in srgb, var(--effect-color) 60%, transparent), 0 0 36px color-mix(in srgb, var(--effect-accent) 39%, transparent);
+}
 .viewer-card {
   --face-radius: 13px;
   position: relative; display: block; width: min(246px, 100%, calc((100dvh - 175px) * 5 / 7));
@@ -45,8 +49,13 @@
   padding: 0; border-radius: var(--face-radius); perspective: 1050px; touch-action: manipulation; cursor: pointer;
 }
 .viewer-card:focus-visible { outline: 2px solid var(--viewer-light); outline-offset: 5px; }
+.viewer-atmosphere {
+  --aura-x: clamp(18px, 6.2vw, 40px);
+  position: absolute; inset: -11px calc(var(--aura-x) * -1); z-index: 0; pointer-events: none;
+  width: calc(100% + var(--aura-x) * 2); height: calc(100% + 22px);
+}
 .viewer-flip {
-  display: block; position: absolute; inset: 0; transform-style: preserve-3d;
+  display: block; position: absolute; inset: 0; z-index: 1; transform-style: preserve-3d;
   transition: transform .67s cubic-bezier(.2, .7, .23, 1);
 }
 .viewer-flip[data-reversed='true'] { transform: rotateY(180deg); }

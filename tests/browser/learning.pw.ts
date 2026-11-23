@@ -256,6 +256,7 @@ test('opens the creature series, links alternate forms and changes art between p
   const profile = page.getByRole('dialog', { name: '词卡详情' })
   await profile.getByRole('button', { name: /查看原种 refract/ }).click()
   await expect(profile.locator('.word-card')).toHaveAttribute('data-motif', 'prism-beetle')
+  await expect(profile.locator('.viewer-atmosphere')).toHaveAttribute('data-effect', 'prism')
   await page.keyboard.press('Escape')
 
   await page.getByRole('button', { name: '拆词灵词包' }).click()
@@ -284,5 +285,42 @@ test('opens the creature series, links alternate forms and changes art between p
   await page.getByRole('button', { name: '直接打开' }).click()
   await expect(deck).toHaveCount(5)
   await expect(deck.filter({ hasText: 'colossal' })).toHaveAttribute('data-rarity', 'UR')
+})
+
+test('card previews play distinct edge effects and hold a still frame when motion is reduced', async ({ page }) => {
+  await page.goto('/#collection?book=creatures')
+  await page.getByRole('button', { name: '拆词灵词包' }).click()
+  await page.getByRole('button', { name: '直接打开' }).click()
+  const water = page.getByRole('button', { name: '预览词卡 absorb' })
+  await expect(water).toHaveAttribute('data-effect', 'water')
+  expect(await water.evaluate(card => getComputedStyle(card, '::after').animationName)).toContain('effect-drift')
+  await water.click()
+  const viewer = page.getByRole('dialog', { name: '词卡预览' })
+  const atmosphere = viewer.locator('.viewer-atmosphere')
+  const fingerprint = () => atmosphere.evaluate(canvas => {
+    const element = canvas as HTMLCanvasElement
+    const pixels = element.getContext('2d')!.getImageData(0, 0, element.width, element.height).data
+    let result = 0
+    for (let i = 3; i < pixels.length; i += 124) result = Math.imul(result, 31) ^ pixels[i]
+    return result
+  })
+  await expect(atmosphere).toHaveAttribute('data-effect', 'water')
+  await expect.poll(fingerprint).not.toBe(0)
+  const wave = await fingerprint()
+  await expect.poll(fingerprint).not.toBe(wave)
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await expect(viewer).toHaveAttribute('data-reduced', 'true')
+  await expect(viewer.locator('.card-rim')).toHaveCSS('animation-name', 'none')
+  const still = await fingerprint()
+  await page.waitForTimeout(120)
+  expect(await fingerprint()).toBe(still)
+  await viewer.getByRole('button', { name: '翻看中文释义' }).click()
+  await expect(atmosphere).toHaveCount(0)
+  await expect(viewer.locator('.viewer-definitions')).toContainText('吸收')
+  await viewer.getByRole('button', { name: '关闭词卡预览' }).click()
+
+  await page.getByRole('button', { name: '预览词卡 eclipse' }).click()
+  await expect(atmosphere).toHaveAttribute('data-effect', 'halo')
+  await expect.poll(fingerprint).not.toBe(still)
 })
 

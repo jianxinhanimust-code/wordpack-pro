@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { CSSProperties, PointerEvent } from 'react'
+import type { PointerEvent } from 'react'
 import type { Word } from '@/data/books'
 import { artHeight, artWidth, cardDesign, illustrationUrl, paintCard, rarities } from '@/core/cardArt'
+import { effectStyle } from '@/core/cardEffects'
+import type { CardEffectStyle } from '@/core/cardEffects'
 
 const lightProperties = [
   '--px', '--py', '--rx', '--ry', '--foil-strength', '--foil-angle',
@@ -24,10 +26,11 @@ export function WordCard({ word, compact = false, staticMotion = false, conceale
   const title = concealed ? 'WordPack' : word.word
   const loading = compact && !eagerArt ? 'lazy' : 'eager'
   const density = compact ? 1.4 : 2
-  const variables = {
+  const variables: CardEffectStyle = {
+    ...effectStyle(design.effect),
     '--card-ink': design.palette.ink, '--card-field': design.palette.field,
     '--card-accent': design.palette.light, '--card-metal': design.palette.metal,
-  } as CSSProperties
+  }
 
   useEffect(() => {
     if (canvas.current) paintCard(canvas.current, design, illustrated)
@@ -67,7 +70,7 @@ export function WordCard({ word, compact = false, staticMotion = false, conceale
   }
   return <span className={`word-card ${compact ? 'compact-card' : ''}`}
       data-pattern={design.fingerprint} data-motif={design.motif} data-artwork={illustrated || undefined}
-      data-series={design.series}
+      data-series={design.series} data-effect={design.effect}
       data-relief={relief || undefined} data-rarity={identity?.rarity} data-variant={!!identity?.variant || undefined} style={variables}
       ref={element} onPointerMove={follow} onPointerLeave={reset} onPointerCancel={reset}>
     <span className="card-illustration" aria-hidden="true">
