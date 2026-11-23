@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cardDesign, motifs } from './cardArt'
+import { cardDesign, illustrationUrl, motifs } from './cardArt'
 import { alternateCreature, artBooks, creatureWords } from '@/data/creatures'
 
 describe('word card artwork', () => {
@@ -59,13 +59,33 @@ describe('word card artwork', () => {
   it('adds 16 original Variety series entries with two legends and a paired animated variant', () => {
     const variety = artBooks[2]
     expect(variety.words).toHaveLength(16)
-    const designs = artBooks.flatMap(book => book.words.map(word => cardDesign(word.word)))
+    const designs = artBooks.slice(0, 3).flatMap(book => book.words.map(word => cardDesign(word.word)))
     expect(new Set(designs.map(card => card.motif)).size).toBe(50)
     expect(cardDesign('pierce')).toMatchObject({ motif: 'glacier-narwhal', effect: 'frost', identity: { rarity: 'UR' } })
     expect(cardDesign('shelter')).toMatchObject({ motif: 'canopy-sloth', effect: 'motes', identity: { rarity: 'UR' } })
     expect(cardDesign('velvet').identity?.variant).toBeUndefined()
     expect(cardDesign('frost')).toMatchObject({ effect: 'frost', identity: { variant: '霜化异种' } })
     expect(alternateCreature('frost')?.word).toBe('vibrate')
+  })
+
+  it('maps all 80 numbered portraits without collisions and keeps seven genuine alternate-form links', () => {
+    const added = artBooks.slice(3)
+    expect(added.map(book => book.words.length)).toEqual([18, 18, 14, 12, 18])
+    const designs = artBooks.flatMap(book => book.words.map(word => cardDesign(word.word)))
+    expect(new Set(designs.map(card => card.motif)).size).toBe(130)
+    const atlas = added.flatMap(book => book.words.map(word => ({ word: word.word, ...cardDesign(word.word) })))
+    expect(atlas.every(card => card.effect && illustrationUrl(card.motif).includes('/card-art/atlas/'))).toBe(true)
+    expect(new Set(atlas.filter(card => card.identity?.rarity === 'UR').map(card => card.motif)).size).toBe(9)
+    const variants = atlas.filter(card => card.identity?.variant)
+    expect(variants).toHaveLength(7)
+    for (const variant of variants) {
+      const base = alternateCreature(variant.word)!
+      expect(base.series).toBe(variant.series)
+      expect(base.art).not.toBe(variant.motif)
+      expect(alternateCreature(base.word)?.word).toBe(variant.word)
+    }
+    expect(cardDesign('gear').effect).toBe('cogs')
+    expect(cardDesign('icy').effect).toBe('frost')
   })
 
   it('gives representative motifs distinct effects independently of rarity', () => {

@@ -245,6 +245,9 @@ button.pill:hover { color: var(--accent); border-color: var(--accent-strong); }
 .hero[data-exam='variety'] { border-color: #516d96; }
 .hero[data-exam='variety'] h2 em { color: #b9dbff; }
 .hero[data-exam='variety'] .primary { background: #aed5fb; color: #10233a; }
+.hero[data-themed] { border-color: color-mix(in srgb, var(--series-accent) 50%, #181327); }
+.hero[data-themed] h2 em { color: var(--series-accent); }
+.hero[data-themed] .primary { background: var(--series-accent); color: #191622; }
 .collector-cover {
   position: absolute; display: grid; place-items: center; inset: 0 6% 0 auto; width: 46%;
   pointer-events: none; perspective: 820px;
@@ -402,6 +405,9 @@ input[type='checkbox'], input[type='radio'], input[type='range'] { accent-color:
 .creature-banner[data-series='variety']::after { background: linear-gradient(90deg, #182434 19%, #182434e8 38%, #19264050 92%); }
 .creature-banner[data-series='variety'] .creature-banner-content h2 { color: #c4e5ff; }
 .creature-banner[data-series='variety'] .creature-pack-button { background: #213851; border-color: #7ca3d1; }
+.creature-banner[data-themed] { border-color: color-mix(in srgb, var(--series-accent) 48%, #261c2f); }
+.creature-banner[data-themed] .creature-banner-content h2 { color: var(--series-accent); }
+.creature-banner[data-themed] .creature-pack-button { border-color: var(--series-accent); }
 .creature-pair {
   display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; margin-top: 10px;
   padding: 6px 11px; gap: 4px 10px; border: 1px solid #684c72; border-radius: 10px;

@@ -49,7 +49,8 @@ export function Dashboard({ active, data, words, loading, reduced, now, due, go,
         }}><span className="exam-code">{section.code}</span><strong>{section.label}</strong><ChevronRight size={16}/></button>)}
     </div>
     {error && <p className="notice error" role="alert">切换专区失败，请重试。</p>}
-    <section className="hero" data-exam={edition} aria-labelledby="hero-title">
+    <section className="hero" data-exam={edition} data-themed={illustrated?.theme ? true : undefined}
+      style={illustrated?.theme} aria-labelledby="hero-title">
       <div className="hero-art" aria-hidden="true">
         <CollectorCover exam={edition}/>
       </div>

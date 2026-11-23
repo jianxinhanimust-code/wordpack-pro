@@ -2,7 +2,7 @@ import { useId, useMemo, useState } from 'react'
 import { ArrowRight, Check, ChevronRight, Layers3, Leaf, LoaderCircle, PackageOpen, PawPrint, Snowflake, Star, X, Zap } from 'lucide-react'
 import type { Word } from '@/data/books'
 import { getNote, meaningOf } from '@/data/editorial'
-import { artBook } from '@/data/creatures'
+import { artBook, artBooks } from '@/data/creatures'
 import type { ArtBookId } from '@/data/creatures'
 import { cardDesign } from '@/core/cardArt'
 import { makeChoices } from '@/core/practice'
@@ -86,12 +86,13 @@ const shelves = [
   { id: 'exotic', label: '异境物种', icon: Leaf },
   { id: 'variety', label: '万象生灵', icon: Snowflake },
 ] as const
+const themedBooks = artBooks.filter(book => book.theme)
 
 export function Showcase({ words, data, loading, reduced, openGallery, openArtBook }: {
   words: Word[]; data: Data; loading: boolean; reduced: boolean; openGallery: () => void; openArtBook: (id: ArtBookId) => void
 }) {
   const heading = useId()
-  const [shelf, setShelf] = useState<typeof shelves[number]['id']>('recent')
+  const [shelf, setShelf] = useState<typeof shelves[number]['id'] | ArtBookId>('recent')
   const [preview, setPreview] = useState<{ cards: Word[]; selected: number } | null>(null)
   const { recent, favorites, examples } = useMemo(() => {
     const seen = new Set<string>()
@@ -124,6 +125,13 @@ export function Showcase({ words, data, loading, reduced, openGallery, openArtBo
       {shelves.map(({ id, label, icon: Icon }) => <button type="button" key={id} aria-pressed={id === shelf} onClick={() => setShelf(id)}>
         <Icon size={13}/>{label}
       </button>)}
+      <select aria-label="选择新增主题系列" value={series?.theme ? series.meta.id : ''} onChange={event => {
+        const book = artBook(event.target.value)
+        setShelf(book?.meta.id ?? 'recent')
+      }}>
+        <option value="">更多主题</option>
+        {themedBooks.map(book => <option key={book.meta.id} value={book.meta.id}>{book.meta.name}</option>)}
+      </select>
     </div>
     {cards.length ? <div className="showcase-cards">
       {cards.map((word, index) => <button type="button" key={word.id} aria-label={`预览词卡 ${word.word}`}

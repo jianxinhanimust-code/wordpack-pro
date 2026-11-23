@@ -100,6 +100,14 @@
 .daily-feedback .text-button { min-height: 34px; }
 
 .showcase-shelves { display: flex; flex-wrap: wrap; gap: 6px; }
+.showcase-shelves select {
+  min-height: 37px;
+  max-width: 100%;
+  padding: 5px 8px;
+  border-radius: 7px;
+  color: #dfd0f0;
+  font-size: 12px;
+}
 .showcase-shelves button {
   min-height: 37px;
   display: inline-flex;

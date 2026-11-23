@@ -202,7 +202,8 @@ export function Pack({ words, active, settings, collected, reduced, disabledMoti
     <div className="session-top"><button className="text-button" onClick={back}><ArrowLeft size={17}/>返回首页</button>
       <span>{active.name}</span></div>
     <section className={`pack-stage ${reduced ? 'pack-static' : ''} ${dragging ? 'dragging' : ''}`} ref={stage}
-      data-phase={phase} data-exam={settings.exam} data-edition={illustrated?.meta.id}>
+      data-phase={phase} data-exam={settings.exam} data-edition={illustrated?.meta.id}
+      data-themed={illustrated?.theme ? true : undefined} style={illustrated?.theme}>
       <div className="stage-studio" aria-hidden="true"/>
       <div className="stage-light" aria-hidden="true"/>
       {phase === 'revealed' && !reduced && !skip && <StarBurst/>}

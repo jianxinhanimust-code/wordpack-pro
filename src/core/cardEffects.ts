@@ -1,5 +1,6 @@
 import type { Motif } from './cardArt'
 import type { CreatureArt } from '@/data/creatures'
+import type { AtlasArt } from '@/data/atlasCards'
 import type { CSSProperties } from 'react'
 
 export const effectColors = {
@@ -11,6 +12,7 @@ export const effectColors = {
   mist: { main: '#a9c2ff', glint: '#f0fcff', accent: '#c498e6' },
   motes: { main: '#a8df81', glint: '#fff6be', accent: '#f4b98e' },
   frost: { main: '#7bcbff', glint: '#ebfbff', accent: '#a9aaff' },
+  cogs: { main: '#dba366', glint: '#ffe9b5', accent: '#f78550' },
 } as const
 export type CardEffect = keyof typeof effectColors
 export type CardEffectStyle = CSSProperties & Record<`--${string}`, string | number>
@@ -21,7 +23,7 @@ export function effectStyle(effect: CardEffect | undefined): CardEffectStyle {
   return { '--effect-color': color.main, '--effect-glint': color.glint, '--effect-accent': color.accent }
 }
 
-export const effectForArt: Record<Motif | CreatureArt, CardEffect> = {
+export const effectForArt: Partial<Record<Motif | CreatureArt, CardEffect>> = {
   arches: 'halo', waters: 'water', tiles: 'arc', wing: 'motes', vessel: 'water', compass: 'halo', phase: 'mist',
   iris: 'prism', tree: 'motes', summits: 'mist', astrolabe: 'halo', facet: 'prism', hourglass: 'embers', braid: 'mist',
   shell: 'water', eclipse: 'halo',
@@ -38,4 +40,4 @@ export const effectForArt: Record<Motif | CreatureArt, CardEffect> = {
   'moss-salamander': 'water', 'glasswing-cicada': 'prism', 'sand-ray-hound': 'embers', 'coral-boxfish': 'water',
   'peat-owl': 'mist', 'iron-stag-beetle': 'arc', 'kelp-seadragon': 'water', 'ash-condor': 'embers',
   'amber-centipede': 'embers', 'glacier-narwhal': 'frost', 'canopy-sloth': 'motes', 'glasswing-cicada-frost': 'frost',
-}
+} satisfies Record<Motif | Exclude<CreatureArt, AtlasArt>, CardEffect>

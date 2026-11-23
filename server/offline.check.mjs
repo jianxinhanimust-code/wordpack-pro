@@ -32,17 +32,25 @@ try {
     'optional large books are not precached')
   assert.ok(precached.includes('/foil-studio.webp'))
   assert.equal(precached.filter(path => path.startsWith('/card-art/')).length, 68)
+  const atlasArt = '/card-art/atlas/79-amber-wyvern-frost.webp'
+  assert.ok(!precached.includes(atlasArt), 'the extended collections do not download on first install')
   assert.ok(precached.includes('/manifest.webmanifest'))
   assert.ok(!precached.some(path => path.startsWith('/api/')))
+  const loadedAtlas = await page.evaluate(async path => {
+    const image = await fetch(path)
+    return image.ok && image.headers.get('content-type') === 'image/webp'
+  }, atlasArt)
+  assert.ok(loadedAtlas, 'an extended illustration can be loaded on demand')
 
   await context.setOffline(true)
   await page.reload()
   await page.waitForFunction(() => Boolean(document.querySelector('#root')?.textContent?.trim()))
-  const result = await page.evaluate(async bookPath => {
-    const [dictionary, art, variant, exotic, variety] = await Promise.all([
+  const result = await page.evaluate(async ([bookPath, atlasPath]) => {
+    const [dictionary, art, variant, exotic, variety, atlas] = await Promise.all([
       fetch(bookPath), fetch('/card-art/wing-subject.webp'), fetch('/card-art/glacial-koi-shadow.webp'),
       fetch('/card-art/salt-gecko-obsidian.webp'),
       fetch('/card-art/glasswing-cicada-frost.webp'),
+      fetch(atlasPath),
     ])
     return {
       wordBookAvailable: dictionary.ok && (await dictionary.text()).length > 1000,
@@ -50,12 +58,13 @@ try {
       creatureAvailable: variant.ok && variant.headers.get('content-type') === 'image/webp',
       exoticAvailable: exotic.ok && exotic.headers.get('content-type') === 'image/webp',
       varietyAvailable: variety.ok && variety.headers.get('content-type') === 'image/webp',
+      atlasAvailable: atlas.ok && atlas.headers.get('content-type') === 'image/webp',
       aiUnavailable: await fetch('/api/ai').then(() => false, () => true),
     }
-  }, book)
+  }, [book, atlasArt])
   assert.deepEqual(result, {
     wordBookAvailable: true, artworkAvailable: true, creatureAvailable: true, exoticAvailable: true,
-    varietyAvailable: true, aiUnavailable: true,
+    varietyAvailable: true, atlasAvailable: true, aiUnavailable: true,
   })
   await page.goto(`${origin}/#books`)
   const cet4 = page.locator('.book-tile').filter({ has: page.getByRole('heading', { name: '大学英语四级' }) })

@@ -193,9 +193,40 @@ function frostBloom(field: Field) {
   }
 }
 
+function clockwork(field: Field) {
+  const { ctx, x, y, margin, time, power, colors } = field
+  for (const side of [-1, 1]) {
+    for (let wheel = 0; wheel < 2; wheel++) {
+      const radius = margin * (wheel === 0 ? .53 : .36)
+      ctx.save()
+      ctx.translate(side * (x + margin * .37), side * y * .59 + (wheel ? radius * 2.35 : 0))
+      ctx.rotate(side * time * (wheel ? -.61 : .42))
+      ctx.beginPath()
+      for (let step = 0; step < 40; step++) {
+        const angle = step * turn / 40
+        const edge = radius * (step % 4 < 2 ? 1.16 : .94)
+        const px = Math.cos(angle) * edge
+        const py = Math.sin(angle) * edge
+        if (step === 0) ctx.moveTo(px, py)
+        else ctx.lineTo(px, py)
+      }
+      ctx.closePath()
+      lightStroke(field, 1.15, power * .76, colors.main)
+      ctx.beginPath()
+      for (const spoke of [0, 1, 2, 3]) {
+        const angle = spoke * Math.PI / 2
+        ctx.moveTo(0, 0)
+        ctx.lineTo(Math.cos(angle) * radius * .72, Math.sin(angle) * radius * .72)
+      }
+      lightStroke(field, .8, power * .78, colors.glint)
+      ctx.restore()
+    }
+  }
+}
+
 const painters: Record<CardEffect, (field: Field) => void> = {
   water: tide, halo: corona, arc: electricity, prism: refraction, mist: vapor,
-  embers: field => driftingLights(field, true), motes: field => driftingLights(field, false), frost: frostBloom,
+  embers: field => driftingLights(field, true), motes: field => driftingLights(field, false), frost: frostBloom, cogs: clockwork,
 }
 
 export function CardAtmosphere({ effect, rarity, seed, reduced }: {

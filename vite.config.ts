@@ -19,6 +19,7 @@ const optionalBooks = ['gre', 'toefl', 'npee', 'primary', 'primary_school']
 const optionalChunk = new RegExp(`^assets/(?:${optionalBooks.join('|')})-[\\w-]+\\.js$`)
 /** 词头发音按需加载，体积大且只有被点到的词才需要，不进预缓存 */
 const isAudio = (path: string) => path.startsWith('audio/')
+const isAtlasArtwork = (path: string) => path.startsWith('card-art/atlas/')
 
 async function packageNotices(directory: string) {
   const files = ['LICENSE', 'THIRD_PARTY_NOTICES.md']
@@ -39,17 +40,18 @@ function offlineBuild(): Plugin {
     async writeBundle(output) {
       const directory = resolve(output.dir ?? 'dist')
       await packageNotices(directory)
-      const entries = (await readdir(directory, { recursive: true, withFileTypes: true }))
+      const files = (await readdir(directory, { recursive: true, withFileTypes: true }))
         .filter(entry => entry.isFile())
         .map(entry => join(entry.parentPath, entry.name))
         .map(path => relative(directory, path).replaceAll('\\', '/'))
-        .filter(path => path !== 'offline-worker.js' && !path.endsWith('.map')
-          && !optionalChunk.test(path) && !isAudio(path))
         .sort()
+      const entries = files
+        .filter(path => path !== 'offline-worker.js' && !path.endsWith('.map')
+          && !optionalChunk.test(path) && !isAudio(path) && !isAtlasArtwork(path))
       if (!entries.includes('index.html')) throw Error('Production build has no offline shell.')
       const worker = await readFile(new URL('./scripts/offline-worker.js', import.meta.url), 'utf8')
       const version = createHash('sha256').update(worker)
-      for (const path of entries) {
+      for (const path of [...entries, ...files.filter(isAtlasArtwork)]) {
         version.update(path).update(await readFile(join(directory, path)))
       }
       const script = worker.replace('__WORDPACK_ASSETS__', JSON.stringify(entries))

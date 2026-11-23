@@ -33,7 +33,8 @@ const identities: Record<Motif, CardIdentity> = {
 }
 
 export function illustrationUrl(name: Motif | CreatureArt | 'card-back' | 'wing-subject') {
-  return `${import.meta.env.BASE_URL}card-art/${name}.webp`
+  const directory = /^\d{2}-/.test(name) ? 'card-art/atlas' : 'card-art'
+  return `${import.meta.env.BASE_URL}${directory}/${name}.webp`
 }
 
 const palettes = [
@@ -80,7 +81,7 @@ export function cardDesign(text: string, concealed = false) {
   const identity: CardIdentity | null = concealed ? null : creature ?? entry?.[2] ?? identities[engraving]
   return {
     seed, motif, engraving, identity, series: creature?.series, fingerprint: motif + '-' + seed.toString(36),
-    effect: concealed ? undefined : effectForArt[motif],
+    effect: concealed ? undefined : creature?.effect ?? effectForArt[motif],
     palette: palettes[concealed ? 0 : creature?.palette ?? entry?.[1] ?? ((seed >>> 7) % palettes.length)],
     frame: (seed >>> 17) % 3,
     layers: 4 + ((seed >>> 13) % 4),

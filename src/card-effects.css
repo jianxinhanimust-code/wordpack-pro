@@ -83,11 +83,22 @@
   --wake-x: 5px;
   --drift-period: 4.2s;
 }
+.word-card[data-effect='cogs'] .card-rim {
+  --rim-light-pattern: repeating-conic-gradient(from var(--card-light-angle), transparent 0deg 15deg,
+    var(--effect-color) 17deg 30deg, var(--effect-glint) 32deg 36deg, transparent 39deg 45deg);
+}
+[data-effect='cogs'] {
+  --reveal-effect: radial-gradient(circle, transparent 35%, var(--effect-color) 40% 48%, transparent 52%) 0 26% / 14% 19% no-repeat,
+    radial-gradient(circle, transparent 35%, var(--effect-glint) 39% 46%, transparent 50%) 100% 73% / 14% 19% no-repeat;
+  --wake-x: -5px;
+  --drift-period: 4.9s;
+}
 
 .word-card[data-effect] .card-rim { background: var(--rim-light-pattern); }
 .viewer-front .word-card[data-effect='prism'][data-rarity='UR'] .card-rim { animation-duration: 7s; }
 .viewer-front .word-card[data-effect='water'] .card-rim { animation: rim-current 4s ease-in-out infinite alternate; }
 .viewer-front .word-card[data-effect='frost'] .card-rim { animation: rim-current 4.8s ease-in-out infinite alternate; }
+.viewer-front .word-card[data-effect='cogs'] .card-rim { animation: rim-light 7s linear infinite; }
 .viewer-front .word-card[data-effect='arc'] .card-rim { animation: rim-pulse 2.6s ease-in-out infinite; }
 .viewer-front .word-card:is([data-effect='embers'], [data-effect='mist'], [data-effect='motes']) .card-rim {
   animation: rim-pulse 4.4s ease-in-out infinite;

@@ -2,10 +2,13 @@ import { makeWord } from './books'
 import type { BookMeta } from './books'
 import type { Sense } from './types'
 import type { Rarity } from '@/core/cardArt'
+import type { CardEffect, CardEffectStyle } from '@/core/cardEffects'
+import { atlasGroups } from './atlasCards'
+import type { AtlasArt, AtlasBookId } from './atlasCards'
 
 type Creature = {
   word: string; art: string; kind: string; rarity: Rarity; palette: number
-  phonetic: string; sense: Sense; variant?: string; formOf?: string
+  phonetic: string; sense: Readonly<Sense>; variant?: string; formOf?: string; effect?: CardEffect
 }
 
 const creatures = [
@@ -117,16 +120,17 @@ const variety = [
     sense: ['v.', '抓紧；握牢'] },
 ] as const satisfies readonly Creature[]
 
-export type CreatureArt = typeof creatures[number]['art'] | typeof exotic[number]['art'] | typeof variety[number]['art']
-export type ArtBookId = 'creatures' | 'exotic' | 'variety'
+export type CreatureArt = typeof creatures[number]['art'] | typeof exotic[number]['art'] | typeof variety[number]['art'] | AtlasArt
+export type ArtBookId = 'creatures' | 'exotic' | 'variety' | AtlasBookId
 type CardCreature = Omit<Creature, 'art'> & { art: CreatureArt; series: ArtBookId }
 
 function edition<const Id extends ArtBookId>(meta: Omit<BookMeta, 'id' | 'totalCount'> & { id: Id },
-  cards: readonly Creature[], cover: CreatureArt, previews: string[], packName: string) {
+  cards: readonly Creature[], cover: CreatureArt, previews: readonly string[], packName: string, theme?: CardEffectStyle) {
   const words = cards.map(card => makeWord({
     word: card.word, phonetic: card.phonetic, definitions: [[...card.sense]],
   }, meta.id))
-  return { meta: { ...meta, totalCount: cards.length }, cover, words, packName, previews: words.filter(word => previews.includes(word.word)) }
+  return { meta: { ...meta, totalCount: cards.length }, cover, words, packName, theme,
+    previews: words.filter(word => previews.includes(word.word)) }
 }
 
 export const artBooks = [
@@ -136,12 +140,17 @@ export const artBooks = [
     exotic, 'canyon-tortoise', ['adhere', 'transparent', 'colossal'], '异境物种词包'),
   edition({ id: 'variety', name: '万象生灵', shortName: '万象', description: '16 张生物词卡，含霜化异种和两张传说。', color: 'blue' },
     variety, 'glacier-narwhal', ['dive', 'frost', 'pierce'], '万象生灵词包'),
+  ...atlasGroups.map(group => edition({ id: group.id, name: group.name, shortName: group.shortName,
+    description: `${group.cards.length} 张${group.shortName}主题词卡。`, color: group.color },
+  group.cards, group.cover, group.preview, `${group.name}词包`,
+  { '--series-accent': group.accent, '--series-foil-hue': `${group.hue}deg` })),
 ] as const
 
 const byWord = new Map<string, CardCreature>([
   ...creatures.map(entry => [entry.word, { ...entry, series: 'creatures' }] as const),
   ...exotic.map(entry => [entry.word, { ...entry, series: 'exotic' }] as const),
   ...variety.map(entry => [entry.word, { ...entry, series: 'variety' }] as const),
+  ...atlasGroups.flatMap(group => group.cards.map(entry => [entry.word, { ...entry, series: group.id }] as const)),
 ])
 export const creatureWords = artBooks[0].words
 export const artBook = (id: string | undefined) => artBooks.find(book => book.meta.id === id)
