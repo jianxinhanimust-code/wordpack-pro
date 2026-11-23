@@ -273,5 +273,16 @@ test('opens the creature series, links alternate forms and changes art between p
   await page.getByRole('button', { name: '直接打开' }).click()
   await expect(deck).toHaveCount(5)
   expect(new Set([...first, ...await art()]).size).toBe(10)
+
+  await page.goto('/#collection?book=exotic')
+  await expect(gallery.locator('.word-card[data-series=exotic]')).toHaveCount(16)
+  await page.getByRole('combobox', { name: '筛选稀有度或异种' }).selectOption('variant')
+  await expect(gallery.locator('.word-card[data-variant=true]')).toHaveCount(1)
+  await expect(gallery.locator('.word-card')).toHaveAttribute('data-motif', 'salt-gecko-obsidian')
+  await page.getByRole('button', { name: '拆异境物种词包' }).click()
+  await expect(page.locator('.foil-wordmark strong')).toHaveText('异境物种')
+  await page.getByRole('button', { name: '直接打开' }).click()
+  await expect(deck).toHaveCount(5)
+  await expect(deck.filter({ hasText: 'colossal' })).toHaveAttribute('data-rarity', 'UR')
 })
 

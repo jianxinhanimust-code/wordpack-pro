@@ -67,7 +67,7 @@ export function WordCard({ word, compact = false, staticMotion = false, conceale
   }
   return <span className={`word-card ${compact ? 'compact-card' : ''}`}
       data-pattern={design.fingerprint} data-motif={design.motif} data-artwork={illustrated || undefined}
-      data-series={design.creature ? 'creatures' : undefined}
+      data-series={design.series}
       data-relief={relief || undefined} data-rarity={identity?.rarity} data-variant={!!identity?.variant || undefined} style={variables}
       ref={element} onPointerMove={follow} onPointerLeave={reset} onPointerCancel={reset}>
     <span className="card-illustration" aria-hidden="true">

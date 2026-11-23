@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { cardDesign, motifs } from './cardArt'
-import { alternateCreature, creatureWords } from '@/data/creatures'
+import { alternateCreature, artBooks, creatureWords } from '@/data/creatures'
 
 describe('word card artwork', () => {
   it('maps canonical spellings to the same artwork and uses one concealed design', () => {
@@ -34,11 +34,20 @@ describe('word card artwork', () => {
   it('uses a different full illustration for all 18 creatures and pairs both alternate forms', () => {
     const designs = creatureWords.map(word => cardDesign(word.word))
     expect(new Set(designs.map(card => card.motif)).size).toBe(18)
-    expect(designs.every(card => card.creature)).toBe(true)
+    expect(designs.every(card => card.series === 'creatures')).toBe(true)
     expect(cardDesign('crystallize').identity?.variant).toBe('晶化异种')
     expect(cardDesign('vanish').identity?.variant).toBe('幽影异种')
     expect(alternateCreature('refract')?.word).toBe('crystallize')
     expect(alternateCreature('vanish')?.word).toBe('endure')
     expect(cardDesign('vanish', true)).toEqual(cardDesign('sustain', true))
+  })
+
+  it('adds 16 distinct exotic cards alongside the first series', () => {
+    const [original, exotic] = artBooks
+    expect([original.words.length, exotic.words.length]).toEqual([18, 16])
+    const designs = artBooks.flatMap(book => book.words.map(word => cardDesign(word.word)))
+    expect(new Set(designs.map(card => card.motif)).size).toBe(34)
+    expect(cardDesign('colossal')).toMatchObject({ motif: 'canyon-tortoise', series: 'exotic', identity: { rarity: 'UR' } })
+    expect(alternateCreature('radiate')?.word).toBe('adhere')
   })
 })

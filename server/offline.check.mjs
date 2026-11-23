@@ -31,7 +31,7 @@ try {
   assert.ok(!precached.some(path => /^\/assets\/(gre|toefl|npee|primary)-.*\.js$/.test(path)),
     'optional large books are not precached')
   assert.ok(precached.includes('/foil-studio.webp'))
-  assert.equal(precached.filter(path => path.startsWith('/card-art/')).length, 36)
+  assert.equal(precached.filter(path => path.startsWith('/card-art/')).length, 52)
   assert.ok(precached.includes('/manifest.webmanifest'))
   assert.ok(!precached.some(path => path.startsWith('/api/')))
 
@@ -39,17 +39,19 @@ try {
   await page.reload()
   await page.waitForFunction(() => Boolean(document.querySelector('#root')?.textContent?.trim()))
   const result = await page.evaluate(async bookPath => {
-    const [dictionary, art, variant] = await Promise.all([
+    const [dictionary, art, variant, exotic] = await Promise.all([
       fetch(bookPath), fetch('/card-art/wing-subject.webp'), fetch('/card-art/glacial-koi-shadow.webp'),
+      fetch('/card-art/salt-gecko-obsidian.webp'),
     ])
     return {
       wordBookAvailable: dictionary.ok && (await dictionary.text()).length > 1000,
       artworkAvailable: art.ok && art.headers.get('content-type') === 'image/webp',
       creatureAvailable: variant.ok && variant.headers.get('content-type') === 'image/webp',
+      exoticAvailable: exotic.ok && exotic.headers.get('content-type') === 'image/webp',
       aiUnavailable: await fetch('/api/ai').then(() => false, () => true),
     }
   }, book)
-  assert.deepEqual(result, { wordBookAvailable: true, artworkAvailable: true, creatureAvailable: true, aiUnavailable: true })
+  assert.deepEqual(result, { wordBookAvailable: true, artworkAvailable: true, creatureAvailable: true, exoticAvailable: true, aiUnavailable: true })
   await page.goto(`${origin}/#books`)
   const cet4 = page.locator('.book-tile').filter({ has: page.getByRole('heading', { name: '大学英语四级' }) })
   await cet4.getByRole('button', { name: '使用大学英语四级' }).click()

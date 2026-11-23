@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { BookOpen, CircleAlert, Download, LoaderCircle, RotateCcw, Trash2 } from 'lucide-react'
 import type { Word } from '@/data/books'
 import { TOPIC, uniqueWords, useLibrary } from '@/data/library'
-import { creatureBook } from '@/data/creatures'
+import { artBook } from '@/data/creatures'
+import type { ArtBookId } from '@/data/creatures'
 import { getNote, meaningOf } from '@/data/editorial'
 import { dailySummary, getProgress, getQueue, localDay, skillOf } from '@/core/learning'
 import { getPackQueue } from '@/core/packQueue'
@@ -19,18 +20,19 @@ import { ReviewPage, StatsPage } from '@/components/ProgressPages'
 
 const skills = ['recognition', 'spelling', 'listening'] as const
 type Session = { words: Word[]; mode: Mode; id: number }
-type Route = { page: Page; creatureGallery?: boolean }
+type Route = { page: Page; gallery?: ArtBookId }
 function readRoute(): Route {
   const [name, query] = window.location.hash.slice(1).split('?', 2)
   if (name === 'study') return { page: 'review' }
   const page = Object.hasOwn(paths, name) ? name as Page : 'home'
-  return { page, creatureGallery: page === 'collection' && new URLSearchParams(query).get('book') === creatureBook.id }
+  const gallery = page === 'collection' ? artBook(new URLSearchParams(query).get('book') ?? undefined)?.meta.id : undefined
+  return { page, gallery }
 }
 
 export default function App() {
   const { data, error, ready } = useVault()
   const [route, setRoute] = useState<Route>(readRoute)
-  const { page, creatureGallery } = route
+  const { page, gallery } = route
   const [session, setSession] = useState<Session | null>(null)
   const [now, setNow] = useState(() => new Date())
   const [online, setOnline] = useState(navigator.onLine)
@@ -97,10 +99,10 @@ export default function App() {
   }), [words, data])
   const totalDue = Object.values(mustReview).reduce((total, count) => total + count, 0)
 
-  function go(next: Page, showCreatures = false) {
+  function go(next: Page, gallery?: ArtBookId) {
     if (next !== 'study') setSession(null)
-    setRoute({ page: next, creatureGallery: showCreatures })
-    const hash = '#' + next + (showCreatures ? `?book=${creatureBook.id}` : '')
+    setRoute({ page: next, gallery })
+    const hash = '#' + next + (gallery ? `?book=${gallery}` : '')
     if (window.location.hash !== hash) window.history.pushState(null, '', hash)
     setNow(new Date())
     window.scrollTo(0, 0)
@@ -167,12 +169,12 @@ export default function App() {
   }
 
   const activePage = page === 'study' && !session ? 'review' : page
-  const galleryBook = creatureGallery ? creatureBook.id : active.id
+  const galleryBook = gallery ?? active.id
   return <Shell page={activePage} active={active} go={go} online={online} due={totalDue}>
     {library.error && <p role="alert" className="notice error"><CircleAlert size={17}/> 部分词库无法读取。请联网刷新，或打开已导入的本地词书。</p>}
     {activePage === 'home' && <Dashboard active={active} data={data} words={words} loading={loading} reduced={staticMotion}
       now={now} due={totalDue} go={go} selectExam={selectExam} learn={word => begin('recall', [word])}
-      openCreatures={() => go('collection', true)}
+      openArtBook={id => go('collection', id)}
       start={mode => { if (!loading || totalDue) start(mode); else go('review') }}/>}
     {activePage === 'pack' && (loading ? <div className="empty-state panel"><LoaderCircle className="spin"/>正在加载{active.name}…</div>
       : <Pack words={getPackQueue(words, data, now, remaining)} active={active} settings={data.settings} collected={data.collected} reduced={staticMotion}
@@ -185,7 +187,8 @@ export default function App() {
       : <ReviewPage exam={data.settings.exam} book={active.name} due={mustReview} mistakes={misses.length} start={start}/>)}
     {activePage === 'collection' && <Collection key={galleryBook} data={data} active={galleryBook} words={universe} books={metadata}
       memberships={memberships} now={now} reduced={staticMotion} learn={word => begin('recall', [word])}
-      openCreaturePack={async () => { await selectBook(creatureBook.id); go('pack') }}/>}
+      selectArtBook={id => go('collection', id)}
+      openArtPack={async id => { await selectBook(id); go('pack') }}/>}
     {activePage === 'books' && <BooksPage active={active} data={data} books={metadata} select={selectBook}/>}
     {activePage === 'stats' && <StatsPage data={data} now={now} active={active} words={words} onStart={() => go('pack')}/>}
     {activePage === 'settings' && <SettingsPage data={data} update={update} offlineReady={offlineReady} stats={() => go('stats')}/>}

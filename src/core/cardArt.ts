@@ -72,7 +72,7 @@ export function cardDesign(text: string, concealed = false) {
   const motif = creature?.art ?? engraving
   const identity: CardIdentity | null = concealed ? null : creature ?? identities[engraving]
   return {
-    seed, motif, engraving, identity, creature: Boolean(creature), fingerprint: motif + '-' + seed.toString(36),
+    seed, motif, engraving, identity, series: creature?.series, fingerprint: motif + '-' + seed.toString(36),
     palette: palettes[concealed ? 0 : creature?.palette ?? entry?.[1] ?? ((seed >>> 7) % palettes.length)],
     frame: (seed >>> 17) % 3,
     layers: 4 + ((seed >>> 13) % 4),

@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties, PointerEvent } from 'react'
 import { ArrowLeft, ArrowRight, ChevronsRight, FastForward, Gem, Layers3, PackageOpen, Sparkles } from 'lucide-react'
 import type { BookMeta, Word } from '@/data/books'
-import { creatureBook } from '@/data/creatures'
+import { artBook } from '@/data/creatures'
 import type { Preferences } from '@/core/schema'
 import { wordKey } from '@/core/schema'
 import { relations } from '@/data/editorial'
@@ -46,7 +46,7 @@ export function Pack({ words, active, settings, collected, reduced, disabledMoti
   const [error, setError] = useState('')
   const [dragging, setDragging] = useState(false)
   const [selectedCard, setSelectedCard] = useState<number | null>(null)
-  const creaturePack = active.id === creatureBook.id
+  const illustrated = artBook(active.id)
   const stage = useRef<HTMLDivElement>(null)
   const start = useRef<{ id: number; x: number; y: number; travel: number } | null>(null)
   const previewTouch = useRef<{ id: number; index: number; x: number; y: number } | null>(null)
@@ -199,7 +199,7 @@ export function Pack({ words, active, settings, collected, reduced, disabledMoti
     <div className="session-top"><button className="text-button" onClick={back}><ArrowLeft size={17}/>返回首页</button>
       <span>{active.name}</span></div>
     <section className={`pack-stage ${reduced ? 'pack-static' : ''} ${dragging ? 'dragging' : ''}`} ref={stage}
-      data-phase={phase} data-exam={settings.exam} data-edition={creaturePack ? creatureBook.id : undefined}>
+      data-phase={phase} data-exam={settings.exam} data-edition={illustrated?.meta.id}>
       <div className="stage-studio" aria-hidden="true"/>
       <div className="stage-light" aria-hidden="true"/>
       {phase === 'revealed' && !reduced && !skip && <StarBurst/>}
@@ -213,7 +213,7 @@ export function Pack({ words, active, settings, collected, reduced, disabledMoti
           onPointerDown={down} onPointerMove={move} onPointerLeave={leave} onPointerUp={reset} onPointerCancel={reset} onLostPointerCapture={reset}
           onKeyDown={event => { if (event.key === 'Escape') reset() }}
           onClick={event => { if (event.detail === 0) void open() }}>
-          <FoilDecor edition={creaturePack ? '词灵系列' : active.id === 'cet6' ? 'CET–6' : active.id === 'cet4' ? 'CET–4' : 'PRO'}/>
+          <FoilDecor edition={illustrated?.meta.name ?? (active.id === 'cet6' ? 'CET–6' : active.id === 'cet4' ? 'CET–4' : 'PRO')}/>
         </button>
       </div>}
       {phase === 'revealed' && <div className={`reveal-area ${skip ? 'skip' : ''}`}>

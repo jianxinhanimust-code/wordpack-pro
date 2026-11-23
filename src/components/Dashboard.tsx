@@ -5,7 +5,8 @@ import type { BookMeta, Word } from '@/data/books'
 import type { Data, Exam, Mode } from '@/core/schema'
 import { dailySummary, localDay, streak } from '@/core/learning'
 import type { Page } from './Shell'
-import { creatureBook } from '@/data/creatures'
+import { artBook } from '@/data/creatures'
+import type { ArtBookId } from '@/data/creatures'
 import { CollectorCover } from './CollectorCover'
 import { DailyChallenge, Showcase } from './HomeActivity'
 
@@ -21,15 +22,16 @@ const examSections = [
   { id: 'cet6', label: '大学英语六级', code: 'CET-6', words: '六级词包' },
 ] as const
 
-export function Dashboard({ active, data, words, loading, reduced, now, due, go, start, learn, selectExam, openCreatures }: {
+export function Dashboard({ active, data, words, loading, reduced, now, due, go, start, learn, selectExam, openArtBook }: {
   active: BookMeta; data: Data; now: Date; due: number; go: (page: Page) => void; start: (mode: Mode) => void;
   words: Word[]; loading: boolean; reduced: boolean; learn: (word: Word) => void;
-  selectExam: (exam: Exam) => Promise<void>; openCreatures: () => void
+  selectExam: (exam: Exam) => Promise<void>; openArtBook: (id: ArtBookId) => void
 }) {
   const [switching, setSwitching] = useState<Exam | null>(null)
   const [error, setError] = useState(false)
   const exam = examSections.find(section => section.id === data.settings.exam) ?? examSections[1]
-  const creatures = active.id === creatureBook.id
+  const illustrated = artBook(active.id)
+  const edition = illustrated?.meta.id ?? exam.id
   const day = localDay(now)
   const summary = dailySummary(data, day, active.id)
   const percent = Math.min(100, Math.round(summary.learned / data.settings.dailyGoal * 100))
@@ -47,13 +49,13 @@ export function Dashboard({ active, data, words, loading, reduced, now, due, go,
         }}><span className="exam-code">{section.code}</span><strong>{section.label}</strong><ChevronRight size={16}/></button>)}
     </div>
     {error && <p className="notice error" role="alert">切换专区失败，请重试。</p>}
-    <section className="hero" data-exam={creatures ? creatureBook.id : exam.id} aria-labelledby="hero-title">
+    <section className="hero" data-exam={edition} aria-labelledby="hero-title">
       <div className="hero-art" aria-hidden="true">
-        <CollectorCover exam={creatures ? creatureBook.id : exam.id}/>
+        <CollectorCover exam={edition}/>
       </div>
       <div className="hero-content">
-        <div className="hero-label"><Sparkles size={15}/> {creatures ? creatureBook.name : exam.code}</div>
-        <h2 id="hero-title">打开你的<br/><em>{creatures ? '词灵词包' : active.id === exam.id ? exam.words : '今日词包'}</em></h2>
+        <div className="hero-label"><Sparkles size={15}/> {illustrated?.meta.name ?? exam.code}</div>
+        <h2 id="hero-title">打开你的<br/><em>{illustrated?.packName ?? (active.id === exam.id ? exam.words : '今日词包')}</em></h2>
         <p>到期词优先，每包最多 5 张。</p>
         <div className="hero-actions">
           <button className="primary" onClick={() => go('pack')}><PackageOpen size={19}/> 开始拆包 <ArrowRight size={18}/></button>
@@ -64,7 +66,7 @@ export function Dashboard({ active, data, words, loading, reduced, now, due, go,
     <div className="home-activity">
       <DailyChallenge key={`${active.id}:${day}`} book={active.id} words={words} data={data} day={day} loading={loading} learn={learn}/>
       <Showcase key={active.id} words={words} data={data} loading={loading} reduced={reduced}
-        openGallery={() => go('collection')} openCreatures={openCreatures}/>
+        openGallery={() => go('collection')} openArtBook={openArtBook}/>
     </div>
     <section aria-labelledby="today-heading" className="dashboard-section">
       <div className="section-heading"><h2 id="today-heading">今日进度</h2><button className="text-button" onClick={() => go('stats')}>查看统计<ChevronRight size={16}/></button></div>

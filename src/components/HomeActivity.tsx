@@ -1,8 +1,9 @@
 import { useId, useMemo, useState } from 'react'
-import { ArrowRight, Check, ChevronRight, Layers3, LoaderCircle, PackageOpen, PawPrint, Star, X, Zap } from 'lucide-react'
+import { ArrowRight, Check, ChevronRight, Layers3, Leaf, LoaderCircle, PackageOpen, PawPrint, Star, X, Zap } from 'lucide-react'
 import type { Word } from '@/data/books'
 import { getNote, meaningOf } from '@/data/editorial'
-import { creatureWords } from '@/data/creatures'
+import { artBook } from '@/data/creatures'
+import type { ArtBookId } from '@/data/creatures'
 import { cardDesign } from '@/core/cardArt'
 import { makeChoices } from '@/core/practice'
 import { wordKey } from '@/core/schema'
@@ -82,11 +83,11 @@ const shelves = [
   { id: 'recent', label: '最近入藏', icon: PackageOpen },
   { id: 'favorites', label: '特别收藏', icon: Star },
   { id: 'creatures', label: '词灵系列', icon: PawPrint },
+  { id: 'exotic', label: '异境物种', icon: Leaf },
 ] as const
-const featuredCreatures = creatureWords.filter(word => ['absorb', 'eclipse', 'crystallize'].includes(word.word))
 
-export function Showcase({ words, data, loading, reduced, openGallery, openCreatures }: {
-  words: Word[]; data: Data; loading: boolean; reduced: boolean; openGallery: () => void; openCreatures: () => void
+export function Showcase({ words, data, loading, reduced, openGallery, openArtBook }: {
+  words: Word[]; data: Data; loading: boolean; reduced: boolean; openGallery: () => void; openArtBook: (id: ArtBookId) => void
 }) {
   const heading = useId()
   const [shelf, setShelf] = useState<typeof shelves[number]['id']>('recent')
@@ -109,14 +110,14 @@ export function Showcase({ words, data, loading, reduced, openGallery, openCreat
       .sort((a, b) => (favorites.get(wordKey(b.word)) ?? 0) - (favorites.get(wordKey(a.word)) ?? 0)).slice(0, 3) }
   }, [words, data.collected, data.favorites])
   const sample = shelf === 'recent' && recent.length === 0
-  const creatures = shelf === 'creatures'
-  const cards = creatures ? featuredCreatures : shelf === 'favorites' ? favorites : sample ? examples : recent
+  const series = artBook(shelf)
+  const cards = series?.previews ?? (shelf === 'favorites' ? favorites : sample ? examples : recent)
 
   return <section className="activity-panel showcase-panel" aria-labelledby={heading} data-sample={sample}>
     <div className="activity-heading">
       <h2 id={heading}><Layers3 size={19} aria-hidden="true"/>收藏展柜</h2>
-      <button type="button" className="text-button" onClick={creatures ? openCreatures : openGallery}>
-        {creatures ? '查看全系列' : '打开图鉴'}<ChevronRight size={15}/></button>
+      <button type="button" className="text-button" onClick={series ? () => openArtBook(series.meta.id) : openGallery}>
+        {series ? '查看全系列' : '打开图鉴'}<ChevronRight size={15}/></button>
     </div>
     <div className="showcase-shelves" role="group" aria-label="展柜分类">
       {shelves.map(({ id, label, icon: Icon }) => <button type="button" key={id} aria-pressed={id === shelf} onClick={() => setShelf(id)}>
@@ -128,7 +129,7 @@ export function Showcase({ words, data, loading, reduced, openGallery, openCreat
         onClick={() => setPreview({ cards, selected: index })}><WordCard word={word} compact staticMotion={reduced}/></button>)}
     </div> : <p className="activity-empty">{loading ? <><LoaderCircle size={20} className="spin"/>正在加载词卡…</>
       : shelf === 'favorites' ? '点预览窗口的星标，把喜爱的词卡放进这里。' : '当前词书暂无可展示的词卡。'}</p>}
-    {!!cards.length && <p className="showcase-foot">{creatures ? <strong>{creatureWords.length} 张词灵卡 · 含两张异种</strong>
+    {!!cards.length && <p className="showcase-foot">{series ? <strong>{series.meta.description}</strong>
       : sample ? <><strong>词卡预览</strong><span>拆包后会显示最近入藏</span></>
       : <span>点开可以翻牌、查看词义和标星</span>}</p>}
     {preview && <CardViewer cards={preview.cards} initial={preview.selected} reduced={reduced} onClose={() => setPreview(null)}/>}
