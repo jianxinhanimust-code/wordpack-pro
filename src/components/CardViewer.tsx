@@ -26,7 +26,7 @@ export function CardViewer({ cards, initial, reduced, onClose }: {
   const favorite = data.favorites.includes(wordKey(word.word))
   const note = getNote(word.word)
   const senses = word.definitions.slice(0, 3)
-  const palette = cardDesign(word.word).palette
+  const { palette, identity } = cardDesign(word.word)
   const finish = {
     '--viewer-ink': palette.ink, '--viewer-glow': palette.metal,
     '--viewer-light': palette.light,
@@ -88,7 +88,7 @@ export function CardViewer({ cards, initial, reduced, onClose }: {
         </div>
       </header>
       {error && <p className="notice error" role="alert">收藏保存失败，请重试。</p>}
-      <div className="viewer-display">
+      <div className="viewer-display" data-rarity={identity?.rarity}>
         <button type="button" className="viewer-card" ref={card}
           aria-label={reversed ? '显示单词正面' : '翻看中文释义'} aria-describedby={help}
           onClick={() => setReversed(value => !value)}>

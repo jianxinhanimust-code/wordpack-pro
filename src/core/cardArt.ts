@@ -1,4 +1,6 @@
 import { wordKey } from './schema'
+import { creatureByWord } from '@/data/creatures'
+import type { CreatureArt } from '@/data/creatures'
 
 export const motifs = [
   'arches', 'waters', 'tiles', 'wing', 'vessel', 'compass', 'phase', 'iris',
@@ -29,7 +31,7 @@ const identities: Record<Motif, CardIdentity> = {
   eclipse: { rarity: 'UR', kind: '天象' },
 }
 
-export function illustrationUrl(name: Motif | 'card-back' | 'wing-subject') {
+export function illustrationUrl(name: Motif | CreatureArt | 'card-back' | 'wing-subject') {
   return `${import.meta.env.BASE_URL}card-art/${name}.webp`
 }
 
@@ -48,7 +50,7 @@ const palettes = [
 type Palette = typeof palettes[number]
 const featured = new Map<string, [Motif, number]>([
   ['sustain', ['arches', 5]], ['derive', ['waters', 1]], ['allocate', ['tiles', 2]],
-  ['adapt', ['wing', 3]], ['adopt', ['vessel', 4]], ['retain', ['hourglass', 7]],
+  ['adapt', ['wing', 3]], ['adopt', ['vessel', 4]],
   ['maintain', ['tree', 6]], ['inspect', ['iris', 8]], ['prospect', ['summits', 0]],
   ['spectator', ['astrolabe', 5]], ['enhance', ['facet', 9]], ['diminish', ['phase', 7]],
 ])
@@ -65,11 +67,13 @@ export function cardDesign(text: string, concealed = false) {
   const key = concealed ? '' : wordKey(text)
   const seed = hashWord(key)
   const entry = featured.get(key)
-  const motif: Motif = concealed ? 'compass' : entry?.[0] ?? motifs[seed % motifs.length]
+  const creature = creatureByWord(key)
+  const engraving: Motif = concealed ? 'compass' : entry?.[0] ?? motifs[seed % motifs.length]
+  const motif = creature?.art ?? engraving
+  const identity: CardIdentity | null = concealed ? null : creature ?? identities[engraving]
   return {
-    seed, motif, fingerprint: motif + '-' + seed.toString(36),
-    identity: concealed ? null : identities[motif],
-    palette: palettes[concealed ? 0 : entry?.[1] ?? ((seed >>> 7) % palettes.length)],
+    seed, motif, engraving, identity, creature: Boolean(creature), fingerprint: motif + '-' + seed.toString(36),
+    palette: palettes[concealed ? 0 : creature?.palette ?? entry?.[1] ?? ((seed >>> 7) % palettes.length)],
     frame: (seed >>> 17) % 3,
     layers: 4 + ((seed >>> 13) % 4),
     sway: ((seed >>> 21) % 11) - 5,
@@ -328,7 +332,7 @@ export function paintCard(canvas: HTMLCanvasElement, design: Design, illustrated
     ctx.rotate(sway * .022)
     const scale = .91 + (design.seed % 17) * .008
     ctx.scale(scale, scale)
-    engravings[design.motif]({ ...pen, ...engravingLight(ctx, palette) })
+    engravings[design.engraving]({ ...pen, ...engravingLight(ctx, palette) })
     ctx.restore()
   }
   ctx.globalAlpha = 1

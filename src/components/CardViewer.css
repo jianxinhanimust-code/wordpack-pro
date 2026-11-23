@@ -31,6 +31,13 @@
   border-radius: 50%; background: radial-gradient(ellipse, #b6a0c521 8%, #1e1726 61%, #130f19 86%);
   box-shadow: 0 15px 24px #08050c80;
 }
+.viewer-display:is([data-rarity='SR'], [data-rarity='UR'])::after {
+  content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: radial-gradient(ellipse 43% 55% at 50% 47%,
+    color-mix(in srgb, var(--rarity-metal) 44%, transparent), transparent 97%);
+}
+.viewer-display[data-rarity='SR'] .viewer-front .word-card { box-shadow: 0 0 18px #d88fff9c, 0 0 40px #9f53d06b; }
+.viewer-display[data-rarity='UR'] .viewer-front .word-card { box-shadow: 0 0 22px #ffcb7cd2, 0 0 55px #ef994881; }
 .viewer-card {
   --face-radius: 13px;
   position: relative; display: block; width: min(246px, 100%, calc((100dvh - 175px) * 5 / 7));

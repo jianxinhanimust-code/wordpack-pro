@@ -5,9 +5,10 @@ import { illustrationUrl } from '@/core/cardArt'
 const covers = {
   cet4: ['vessel', 'waters', 'iris'],
   cet6: ['facet', 'arches', 'wing'],
+  creatures: ['moss-otter', 'eclipse-phoenix', 'prism-beetle-crystal'],
 } as const
 
-export function CollectorCover({ exam }: { exam: Exam }) {
+export function CollectorCover({ exam }: { exam: Exam | 'creatures' }) {
   return <div className="collector-cover" aria-hidden="true">
     {covers[exam].map((motif, index) => <span className="cover-card" key={motif} style={{ '--slot': index } as CSSProperties}>
       <img src={illustrationUrl(motif)} alt="" decoding="async" draggable={false}/>

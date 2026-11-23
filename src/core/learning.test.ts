@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { getQueue, mistakeSkill, ratingSchedule, recordRating, retention } from './learning'
 import { createData } from './schema'
 import { makeWord } from '@/data/books'
+import { cardDesign } from './cardArt'
+import { getPackQueue } from './packQueue'
+import { creatureWords } from '@/data/creatures'
 
 const words = ['sustain', 'derive', 'allocate'].map((word) => makeWord({ word }, 'cet6'))
 const now = new Date('2026-11-22T08:00:00Z')
@@ -40,5 +43,21 @@ describe('WordPack FSRS', () => {
     expect(retested.progress.sustain.recognition).toBeUndefined()
     expect(retested.progress.sustain.spelling?.card.reps).toBe(2)
     expect(retested.history[1].mode).toBe('mistakes')
+  })
+
+  it('deals uncollected words with varied art across consecutive packs and keeps due cards first', () => {
+    const initial = createData()
+    const first = getPackQueue(creatureWords, initial, now, 12)
+    const collected = Object.fromEntries(first.map(w => [w.word, now.getTime()]))
+    const after = { ...initial, collected, packs: [now.getTime()] }
+    const second = getPackQueue(creatureWords, after, now, 12)
+    expect(first).toHaveLength(5)
+    expect(second).toHaveLength(5)
+    expect(new Set([...first, ...second].map(word => cardDesign(word.word).motif)).size).toBe(10)
+
+    const yesterday = new Date(now.getTime() - 86_400_000)
+    const due = recordRating(after, first[0], 'recall', 'again', yesterday)
+    expect(getPackQueue(creatureWords, due, now, 1)).toEqual([first[0], second[0]])
+    expect(getPackQueue(creatureWords, due, now, 0)).toEqual([first[0]])
   })
 })

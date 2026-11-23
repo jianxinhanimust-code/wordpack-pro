@@ -2,12 +2,13 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties, PointerEvent } from 'react'
 import { ArrowLeft, ArrowRight, ChevronsRight, FastForward, Gem, Layers3, PackageOpen, Sparkles } from 'lucide-react'
 import type { BookMeta, Word } from '@/data/books'
+import { creatureBook } from '@/data/creatures'
 import type { Preferences } from '@/core/schema'
 import { wordKey } from '@/core/schema'
 import { relations } from '@/data/editorial'
 import { collect } from '@/core/vault'
 import { foilSound } from '@/core/foilAudio'
-import { cardDesign, rarities } from '@/core/cardArt'
+import { cardDesign, illustrationUrl, rarities } from '@/core/cardArt'
 import { WordCard } from './WordCard'
 import { CardViewer } from './CardViewer'
 import { StarBurst } from './StarBurst'
@@ -18,13 +19,16 @@ const clamp = (value: number, min: number, max: number) => Math.max(min, Math.mi
 
 export function FoilDecor({ edition }: { edition: string }) {
   return <>
+    <span className="foil-backing" aria-hidden="true"/>
     <span className="foil-body" aria-hidden="true">
+      <i className="foil-seams"/><i className="foil-folds"/>
       <i className="foil-border"/><i className="foil-orbit orbit-a"/><i className="foil-orbit orbit-b"/><i className="foil-orbit orbit-c"/>
       <i className="foil-crystal"><Gem size={68} strokeWidth={0.8}/></i>
       <span className="foil-wordmark">WORDPACK<strong>{edition}</strong></span>
       <span className="foil-edition">VOCABULARY CARDS</span>
       <i className="foil-crimp bottom"/>
     </span>
+    <span className="foil-mouth" aria-hidden="true"/>
     <span className="foil-tab" aria-hidden="true"><i className="foil-crimp"/><i className="tab-grip"><ChevronsRight size={22}/></i></span>
     <span className="foil-cut" aria-hidden="true"/><span className="foil-fresh" aria-hidden="true"/>
   </>
@@ -42,6 +46,7 @@ export function Pack({ words, active, settings, collected, reduced, disabledMoti
   const [error, setError] = useState('')
   const [dragging, setDragging] = useState(false)
   const [selectedCard, setSelectedCard] = useState<number | null>(null)
+  const creaturePack = active.id === creatureBook.id
   const stage = useRef<HTMLDivElement>(null)
   const start = useRef<{ id: number; x: number; y: number; travel: number } | null>(null)
   const previewTouch = useRef<{ id: number; index: number; x: number; y: number } | null>(null)
@@ -102,12 +107,18 @@ export function Pack({ words, active, settings, collected, reduced, disabledMoti
     const drag = start.current
     start.current = null
     cancelAnimationFrame(raf.current)
-    if (drag) paint(1, drag.travel, 0)
+    paint(1, drag?.travel ?? 0, 0)
     setDragging(false)
     setError('')
     setPhase('opening')
     if (settings.sound) foilSound('open')
     const selected = words.slice(0, 5)
+    if (!disabledMotion) {
+      for (const word of selected) {
+        const art = new Image()
+        art.src = illustrationUrl(cardDesign(word.word).motif)
+      }
+    }
     try {
       const added = await collect(selected)
       if (!mounted.current) return
@@ -153,7 +164,21 @@ export function Pack({ words, active, settings, collected, reduced, disabledMoti
   }
   function move(event: PointerEvent<HTMLButtonElement>) {
     const drag = start.current
-    if (!drag || drag.id !== event.pointerId) return
+    if (!drag) {
+      if (reduced || event.pointerType === 'touch' || phase !== 'sealed') return
+      const { currentTarget, clientX, clientY } = event
+      cancelAnimationFrame(raf.current)
+      raf.current = requestAnimationFrame(() => {
+        const box = currentTarget.getBoundingClientRect()
+        const x = clamp((clientX - box.left) / box.width, 0, 1)
+        const y = clamp((clientY - box.top) / box.height, 0, 1)
+        currentTarget.style.setProperty('--foil-yaw', `${(x - .5) * 19}deg`)
+        currentTarget.style.setProperty('--foil-pitch', `${(.5 - y) * 13}deg`)
+        stage.current?.style.setProperty('--glint', `${19 + x * 66}%`)
+      })
+      return
+    }
+    if (drag.id !== event.pointerId) return
     const pull = clamp(event.clientX - drag.x, 0, drag.travel)
     const lift = clamp((event.clientY - drag.y) * 0.35, -23, 23)
     const progress = pull / drag.travel
@@ -162,11 +187,19 @@ export function Pack({ words, active, settings, collected, reduced, disabledMoti
     if (settings.sound && progress > 0.05) foilSound('scrape', progress)
     if (progress >= 1) void open()
   }
+  function leave(event: PointerEvent<HTMLButtonElement>) {
+    if (start.current || hold.current) return
+    cancelAnimationFrame(raf.current)
+    event.currentTarget.style.removeProperty('--foil-yaw')
+    event.currentTarget.style.removeProperty('--foil-pitch')
+    stage.current?.style.removeProperty('--glint')
+  }
 
   return <div className="pack-page">
     <div className="session-top"><button className="text-button" onClick={back}><ArrowLeft size={17}/>返回首页</button>
       <span>{active.name}</span></div>
-    <section className={`pack-stage ${reduced ? 'pack-static' : ''} ${dragging ? 'dragging' : ''}`} ref={stage} data-phase={phase} data-exam={settings.exam}>
+    <section className={`pack-stage ${reduced ? 'pack-static' : ''} ${dragging ? 'dragging' : ''}`} ref={stage}
+      data-phase={phase} data-exam={settings.exam} data-edition={creaturePack ? creatureBook.id : undefined}>
       <div className="stage-studio" aria-hidden="true"/>
       <div className="stage-light" aria-hidden="true"/>
       {phase === 'revealed' && !reduced && !skip && <StarBurst/>}
@@ -177,10 +210,10 @@ export function Pack({ words, active, settings, collected, reduced, disabledMoti
       </div>
       {phase !== 'revealed' && <div className="pack-dais">
         <button type="button" aria-label="拖动封口，或按回车打开卡包" className="foil-pack" disabled={!words.length}
-          onPointerDown={down} onPointerMove={move} onPointerUp={reset} onPointerCancel={reset} onLostPointerCapture={reset}
+          onPointerDown={down} onPointerMove={move} onPointerLeave={leave} onPointerUp={reset} onPointerCancel={reset} onLostPointerCapture={reset}
           onKeyDown={event => { if (event.key === 'Escape') reset() }}
           onClick={event => { if (event.detail === 0) void open() }}>
-          <FoilDecor edition={active.id === 'cet6' ? 'CET–6' : active.id === 'cet4' ? 'CET–4' : 'PRO'}/>
+          <FoilDecor edition={creaturePack ? '词灵系列' : active.id === 'cet6' ? 'CET–6' : active.id === 'cet4' ? 'CET–4' : 'PRO'}/>
         </button>
       </div>}
       {phase === 'revealed' && <div className={`reveal-area ${skip ? 'skip' : ''}`}>
@@ -220,7 +253,7 @@ export function Pack({ words, active, settings, collected, reduced, disabledMoti
               inspect(event.currentTarget, i)
             }}>
             <span className="reveal-flip"><span className="reveal-back" aria-hidden="true"><Gem size={34}/></span>
-              <span className="reveal-front"><WordCard word={word} compact staticMotion={reduced}/></span></span>
+              <span className="reveal-front"><WordCard word={word} compact eagerArt staticMotion={reduced}/></span></span>
           </button>)}
           {edges.length > 0 && <ResonanceBeams edges={edges}/>}
         </div>

@@ -1,13 +1,14 @@
 import { useMemo, useRef, useState } from 'react'
 import type { CSSProperties, PointerEvent } from 'react'
-import { ArrowLeft, ArrowRight, BookOpen, ExternalLink, Gem, Link2, Minus, Plus, RotateCcw, Search, Sparkles, Star } from 'lucide-react'
+import { ArrowLeft, ArrowRight, BookOpen, ExternalLink, Gem, Link2, Minus, PackageOpen, PawPrint, Plus, RotateCcw, Search, Sparkles, Star } from 'lucide-react'
 import type { BookMeta, Word } from '@/data/books'
 import type { Data, Skill } from '@/core/schema'
 import { wordKey } from '@/core/schema'
 import { getProgress, recallStatus } from '@/core/learning'
 import { meaningOf, other, related } from '@/data/editorial'
+import { alternateCreature, creatureBook, creatureByWord, creatureWords } from '@/data/creatures'
 import { toggleFavorite } from '@/core/vault'
-import { cardDesign, rarities } from '@/core/cardArt'
+import { cardDesign, illustrationUrl, rarities } from '@/core/cardArt'
 import type { Rarity } from '@/core/cardArt'
 import { WordCard } from './WordCard'
 import { WordDetails } from './WordDetails'
@@ -21,10 +22,10 @@ const skillNames: Record<Skill, string> = { recognition: '认词', spelling: '�
 const PAGE_SIZE = 24
 type RarityFilter = 'all' | 'variant' | Rarity
 
-export function Collection({ data, active, words, books, memberships, reduced, now, learn }: {
+export function Collection({ data, active, words, books, memberships, reduced, now, learn, openCreaturePack }: {
   data: Data; words: Word[]; books: BookMeta[]; memberships: Map<string, Set<string>>;
   active: string;
-  reduced: boolean; now: Date; learn: (word: Word) => void
+  reduced: boolean; now: Date; learn: (word: Word) => void; openCreaturePack: () => Promise<void>
 }) {
   const [filter, setFilter] = useState<typeof filters[number]['value']>('all')
   const [query, setQuery] = useState('')
@@ -32,30 +33,50 @@ export function Collection({ data, active, words, books, memberships, reduced, n
   const [rarity, setRarity] = useState<RarityFilter>('all')
   const [page, setPage] = useState(0)
   const [selected, setSelected] = useState<Word | null>(null)
-  const index = useMemo(() => new Map(words.map(w => [wordKey(w.word), w])), [words])
+  const [opening, setOpening] = useState(false)
+  const [packError, setPackError] = useState(false)
+  const isCreatureBook = book === creatureBook.id
+  const pool = isCreatureBook ? creatureWords : words
+  const index = useMemo(() => new Map([...words, ...pool].map(w => [wordKey(w.word), w])), [words, pool])
   const filtered = useMemo(() => {
     const text = wordKey(query)
     const due = (id: string) => {
       const p = getProgress(data, id)
       return p && [p.recognition, p.spelling, p.listening].some(t => t && Date.parse(t.card.due) <= now.getTime())
     }
-    return words.filter(w => {
+    return pool.filter(w => {
       const id = wordKey(w.word)
-      const identity = rarity === 'all' ? null : cardDesign(id).identity
-      return (!book || memberships.get(id)?.has(book))
-        && (!text || id.includes(text) || meaningOf(w).includes(text))
+      if (book && !isCreatureBook && !memberships.get(id)?.has(book)) return false
+      const identity = rarity !== 'all' || text ? cardDesign(id).identity : null
+      return (!text || id.includes(text) || meaningOf(w).includes(text) || identity?.kind.includes(text) || identity?.variant?.includes(text))
         && (rarity === 'all' || (rarity === 'variant' ? !!identity?.variant : identity?.rarity === rarity))
         && (filter === 'all' || filter === 'owned' && Object.hasOwn(data.collected, id)
           || filter === 'starred' && data.favorites.includes(id) || filter === 'due' && due(id))
     })
-  }, [words, query, book, rarity, filter, data, now, memberships])
+  }, [pool, query, book, isCreatureBook, rarity, filter, data, now, memberships])
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const activePage = Math.min(page, totalPages - 1)
-  const sectionCount = book ? words.filter(w => memberships.get(wordKey(w.word))?.has(book)).length : words.length
-  const collected = Object.keys(data.collected).filter(word => !book || memberships.get(word)?.has(book)).length
+  const sectionCount = book && !isCreatureBook ? pool.filter(w => memberships.get(wordKey(w.word))?.has(book)).length : pool.length
+  const collected = Object.keys(data.collected).filter(word => !book || (isCreatureBook ? creatureByWord(word) : memberships.get(word)?.has(book))).length
   return <div className="standard-page">
     <div className="page-heading"><div><h1>收藏图鉴</h1><p>已收藏 {collected} 张词卡。打开卡片可查看学习记录和共鸣。</p></div>
       <span className="pill"><Gem size={17}/>{sectionCount.toLocaleString()} 张词卡</span></div>
+    <section className="creature-banner" aria-label="词灵系列">
+      <img src={illustrationUrl('eclipse-phoenix')} alt="" width="720" height="1008" decoding="async"/>
+      <div className="creature-banner-content">
+        <div><h2><PawPrint size={21}/>词灵系列</h2>
+          <p>{isCreatureBook ? `已收集 ${collected} / ${creatureWords.length} 张` : `${creatureWords.length} 张生物卡 · 晶化与幽影异种`}</p></div>
+        {isCreatureBook ? <button className="secondary" disabled={opening} onClick={() => {
+          setOpening(true)
+          setPackError(false)
+          void openCreaturePack().catch(() => { setPackError(true); setOpening(false) })
+        }}><PackageOpen size={17}/>拆词灵词包</button>
+          : <button className="secondary" onClick={() => {
+            setBook(creatureBook.id); setRarity('all'); setFilter('all'); setQuery(''); setPage(0)
+          }}>浏览词灵系列<ArrowRight size={17}/></button>}
+        {packError && <p role="alert">词包打开失败，请重试。</p>}
+      </div>
+    </section>
     <div className="filters panel">
       <div className="filter-tabs" aria-label="收藏状态">{filters.map(f =>
         <button className="subtab" aria-pressed={filter === f.value} key={f.value} onClick={() => { setFilter(f.value); setPage(0) }}>{f.label}</button>)}</div>
@@ -85,7 +106,7 @@ export function Collection({ data, active, words, books, memberships, reduced, n
     </nav>}
     {selected && <CardProfile key={selected.id} word={selected} data={data} books={books} memberships={memberships}
       reduced={reduced} now={now} close={() => setSelected(null)} learn={() => learn(selected)}
-      select={id => { const next = index.get(id); if (next) setSelected(next) }}/>}
+      select={id => { const next = index.get(id) ?? creatureWords.find(word => word.word === id); if (next) setSelected(next) }}/>}
   </div>
 }
 
@@ -98,6 +119,7 @@ function CardProfile({ word, data, books, memberships, reduced, now, close, lear
   const history = data.history.filter(event => event.word === id).slice(-10).reverse()
   const favorite = data.favorites.includes(id)
   const [message, setMessage] = useState('')
+  const alternate = alternateCreature(id)
   return <Modal title="词卡详情" close={close}>
     <div className="profile-grid"><WordCard word={word} staticMotion={reduced}/><WordDetails word={word} settings={data.settings}/></div>
     <div className="action-row">
@@ -106,6 +128,10 @@ function CardProfile({ word, data, books, memberships, reduced, now, close, lear
         void toggleFavorite(id).catch(() => setMessage('收藏保存失败，请重试。'))
       }}><Star size={16} fill={favorite ? 'currentColor' : 'none'}/>{favorite ? '已特别收藏' : '特别收藏'}</button>
     </div>
+    {alternate && <div className="creature-pair"><span><PawPrint size={16}/>{alternate.kind}</span>
+      <button className="text-button" onClick={() => select(alternate.word)}>
+        {alternate.variant ?? '查看原种'} <strong lang="en">{alternate.word}</strong><ArrowRight size={15}/>
+      </button></div>}
     {message && <p className="notice error" role="alert">{message}</p>}
     <div className="member-list">{books.filter(book => memberships.get(id)?.has(book.id)).map(book => <span className="pill" key={book.id}>{book.name}</span>)}</div>
     <div className="profile-section">

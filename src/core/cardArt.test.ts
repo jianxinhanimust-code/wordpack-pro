@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { cardDesign, motifs } from './cardArt'
+import { alternateCreature, creatureWords } from '@/data/creatures'
 
 describe('word card artwork', () => {
   it('maps canonical spellings to the same artwork and uses one concealed design', () => {
@@ -28,5 +29,16 @@ describe('word card artwork', () => {
     for (const motif of motifs) {
       expect(new Set(cards.filter(card => card.motif === motif).map(card => card.identity)).size).toBe(1)
     }
+  })
+
+  it('uses a different full illustration for all 18 creatures and pairs both alternate forms', () => {
+    const designs = creatureWords.map(word => cardDesign(word.word))
+    expect(new Set(designs.map(card => card.motif)).size).toBe(18)
+    expect(designs.every(card => card.creature)).toBe(true)
+    expect(cardDesign('crystallize').identity?.variant).toBe('晶化异种')
+    expect(cardDesign('vanish').identity?.variant).toBe('幽影异种')
+    expect(alternateCreature('refract')?.word).toBe('crystallize')
+    expect(alternateCreature('vanish')?.word).toBe('endure')
+    expect(cardDesign('vanish', true)).toEqual(cardDesign('sustain', true))
   })
 })

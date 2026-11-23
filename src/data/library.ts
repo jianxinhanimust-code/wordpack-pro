@@ -4,10 +4,12 @@ import type { BookMeta, Word } from './books'
 import { orderByEditorial, priority } from './editorial'
 import { wordKey } from '@/core/schema'
 import type { Data } from '@/core/schema'
+import { creatureBook, creatureWords } from './creatures'
 
 export const TOPIC = 'reading'
 export const PERSONAL = 'personal'
 const featured: BookMeta[] = [
+  creatureBook,
   { id: TOPIC, name: '六级阅读常用词', shortName: '阅读专题', description: '常见搭配、语境和同义替换', color: 'rose', totalCount: priority.length },
   { id: PERSONAL, name: '真题个人生词本', shortName: '个人词本', description: '导入你的阅读生词，独立管理', color: 'emerald', totalCount: 0 },
 ]
@@ -19,6 +21,7 @@ export const builtin = [
 const starterData = new Map<string, Word[]>()
 
 async function loadBuiltin(id: string): Promise<Word[]> {
+  if (id === creatureBook.id) return creatureWords
   const cached = starterData.get(id)
   if (cached) return cached
   if (id === TOPIC) {

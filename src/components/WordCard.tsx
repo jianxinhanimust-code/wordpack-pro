@@ -8,8 +8,8 @@ const lightProperties = [
   '--background-x', '--background-y', '--subject-x', '--subject-y', '--stars-x', '--stars-y',
 ]
 
-export function WordCard({ word, compact = false, staticMotion = false, concealed = false }: {
-  word: Word; compact?: boolean; staticMotion?: boolean; concealed?: boolean
+export function WordCard({ word, compact = false, staticMotion = false, concealed = false, eagerArt = false }: {
+  word: Word; compact?: boolean; staticMotion?: boolean; concealed?: boolean; eagerArt?: boolean
 }) {
   const element = useRef<HTMLSpanElement>(null)
   const canvas = useRef<HTMLCanvasElement>(null)
@@ -22,6 +22,7 @@ export function WordCard({ word, compact = false, staticMotion = false, conceale
   const relief = !concealed && design.motif === 'wing' && subjectReady
   const illustrated = painted === image || relief
   const title = concealed ? 'WordPack' : word.word
+  const loading = compact && !eagerArt ? 'lazy' : 'eager'
   const density = compact ? 1.4 : 2
   const variables = {
     '--card-ink': design.palette.ink, '--card-field': design.palette.field,
@@ -66,18 +67,20 @@ export function WordCard({ word, compact = false, staticMotion = false, conceale
   }
   return <span className={`word-card ${compact ? 'compact-card' : ''}`}
       data-pattern={design.fingerprint} data-motif={design.motif} data-artwork={illustrated || undefined}
+      data-series={design.creature ? 'creatures' : undefined}
       data-relief={relief || undefined} data-rarity={identity?.rarity} data-variant={!!identity?.variant || undefined} style={variables}
       ref={element} onPointerMove={follow} onPointerLeave={reset} onPointerCancel={reset}>
     <span className="card-illustration" aria-hidden="true">
-      <img src={image} alt="" loading={compact ? 'lazy' : 'eager'} decoding="async" draggable={false}
+      <img src={image} alt="" loading={loading} decoding="async" draggable={false}
         onLoad={() => setPainted(image)}/>
     </span>
     {!concealed && design.motif === 'wing' && <img className="card-subject" src={illustrationUrl('wing-subject')}
-      alt="" aria-hidden="true" loading={compact ? 'lazy' : 'eager'} decoding="async" draggable={false}
+      alt="" aria-hidden="true" loading={loading} decoding="async" draggable={false}
       onLoad={() => setSubjectReady(true)}/>}
     <canvas className="card-art" ref={canvas} width={artWidth * density} height={artHeight * density} aria-hidden="true"/>
     <span className="card-foil" aria-hidden="true"/>
     <span className="card-starlight" aria-hidden="true"/>
+    {identity && <span className="card-rim" aria-hidden="true"/>}
     {identity && <span className="card-identity">
       <span className="card-rarity"><strong>{identity.rarity}</strong> <span>{rarities[identity.rarity]}</span></span>
       <span className="card-kind">{identity.variant ? <><span>{identity.kind} · </span>{identity.variant}</> : identity.kind}</span>
