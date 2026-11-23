@@ -22,13 +22,18 @@ describe('word card artwork', () => {
     expect(new Set(cards.map(card => card.fingerprint)).size).toBe(cards.length)
   })
 
-  it('assigns the same rarity to each illustration and includes all four tiers', () => {
+  it('assigns stable generic rarities and reserves legendary cards and variants for named terms', () => {
     const cards = Array.from({ length: 240 }, (_, index) => cardDesign('term ' + index))
-    expect(new Set(cards.map(card => card.identity?.rarity))).toEqual(new Set(['N', 'R', 'SR', 'UR']))
+    expect(new Set(cards.map(card => card.identity?.rarity))).toEqual(new Set(['N', 'R', 'SR']))
+    expect(cards.some(card => card.identity?.variant)).toBe(false)
     expect(cardDesign('adapt').identity).toEqual({ rarity: 'SR', kind: '月蛾', variant: '星辉异种' })
+    expect(cardDesign('moth').identity?.variant).toBeUndefined()
     for (const motif of motifs) {
       expect(new Set(cards.filter(card => card.motif === motif).map(card => card.identity)).size).toBe(1)
     }
+    const legendary = ['monument', 'compass', 'summit', 'crystal', 'horizon', 'immense'].map(term => cardDesign(term))
+    expect(legendary.every(card => card.identity?.rarity === 'UR')).toBe(true)
+    expect(new Set(legendary.map(card => card.motif)).size).toBe(legendary.length)
   })
 
   it('uses a different full illustration for all 18 creatures and pairs both alternate forms', () => {

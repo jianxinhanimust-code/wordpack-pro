@@ -324,3 +324,30 @@ test('card previews play distinct edge effects and hold a still frame when motio
   await expect.poll(fingerprint).not.toBe(still)
 })
 
+test('exam galleries show varied legendary artwork and only intentionally assigned alternate forms', async ({ page }) => {
+  await page.goto('/#collection')
+  const gallery = page.locator('.collection-grid')
+  const cards = gallery.locator('.word-card')
+  const books = page.getByRole('combobox', { name: '筛选词书' })
+  const rarity = page.getByRole('combobox', { name: '筛选稀有度或异种' })
+
+  for (const [book, count] of [['cet4', 6], ['cet6', 8]] as const) {
+    await books.selectOption(book)
+    await rarity.selectOption('UR')
+    await expect(cards).toHaveCount(count)
+    expect(await cards.locator('.card-kind').allTextContents()).toEqual(expect.arrayContaining(['雪岭秘境', '晶石', '渊恒鲸']))
+    const motifs = await cards.evaluateAll(items => items.map(item => (item as HTMLElement).dataset.motif))
+    expect(new Set(motifs).size).toBe(count)
+
+    await rarity.selectOption('variant')
+    await expect(cards).toHaveCount(3)
+    expect(await cards.locator('.card-kind').allTextContents()).toEqual(expect.arrayContaining([
+      expect.stringContaining('星辉异种'), expect.stringContaining('幽影异种'), expect.stringContaining('曜岩异种'),
+    ]))
+  }
+
+  await books.selectOption('')
+  await expect(cards).toHaveCount(4)
+  await expect(gallery.getByRole('button', { name: /晶化异种.*crystallize/ })).toBeVisible()
+})
+

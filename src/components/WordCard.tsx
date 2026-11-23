@@ -21,7 +21,8 @@ export function WordCard({ word, compact = false, staticMotion = false, conceale
   const design = useMemo(() => cardDesign(word.word, concealed), [word.word, concealed])
   const { identity } = design
   const image = illustrationUrl(concealed ? 'card-back' : design.motif)
-  const relief = !concealed && design.motif === 'wing' && subjectReady
+  const layered = design.motif === 'wing' && !!identity?.variant
+  const relief = layered && subjectReady
   const illustrated = painted === image || relief
   const title = concealed ? 'WordPack' : word.word
   const loading = compact && !eagerArt ? 'lazy' : 'eager'
@@ -77,7 +78,7 @@ export function WordCard({ word, compact = false, staticMotion = false, conceale
       <img src={image} alt="" loading={loading} decoding="async" draggable={false}
         onLoad={() => setPainted(image)}/>
     </span>
-    {!concealed && design.motif === 'wing' && <img className="card-subject" src={illustrationUrl('wing-subject')}
+    {layered && <img className="card-subject" src={illustrationUrl('wing-subject')}
       alt="" aria-hidden="true" loading={loading} decoding="async" draggable={false}
       onLoad={() => setSubjectReady(true)}/>}
     <canvas className="card-art" ref={canvas} width={artWidth * density} height={artHeight * density} aria-hidden="true"/>

@@ -17,7 +17,7 @@ const identities: Record<Motif, CardIdentity> = {
   arches: { rarity: 'N', kind: '秘境' },
   waters: { rarity: 'R', kind: '秘境' },
   tiles: { rarity: 'N', kind: '遗物' },
-  wing: { rarity: 'SR', kind: '月蛾', variant: '星辉异种' },
+  wing: { rarity: 'SR', kind: '月蛾' },
   vessel: { rarity: 'R', kind: '遗物' },
   compass: { rarity: 'R', kind: '遗物' },
   phase: { rarity: 'R', kind: '天象' },
@@ -29,7 +29,7 @@ const identities: Record<Motif, CardIdentity> = {
   hourglass: { rarity: 'N', kind: '遗物' },
   braid: { rarity: 'N', kind: '遗物' },
   shell: { rarity: 'N', kind: '遗物' },
-  eclipse: { rarity: 'UR', kind: '天象' },
+  eclipse: { rarity: 'SR', kind: '天象' },
 }
 
 export function illustrationUrl(name: Motif | CreatureArt | 'card-back' | 'wing-subject') {
@@ -49,11 +49,17 @@ const palettes = [
   { ink: '#2a1b23', field: '#743746', light: '#ffd4d0', metal: '#f192a3' },
 ] as const
 type Palette = typeof palettes[number]
-const featured = new Map<string, [Motif, number]>([
+const featured = new Map<string, [Motif, number, CardIdentity?]>([
   ['sustain', ['arches', 5]], ['derive', ['waters', 1]], ['allocate', ['tiles', 2]],
-  ['adapt', ['wing', 3]], ['adopt', ['vessel', 4]],
+  ['adapt', ['wing', 3, { rarity: 'SR', kind: '月蛾', variant: '星辉异种' }]], ['adopt', ['vessel', 4]],
   ['maintain', ['tree', 6]], ['inspect', ['iris', 8]], ['prospect', ['summits', 0]],
   ['spectator', ['astrolabe', 5]], ['enhance', ['facet', 9]], ['diminish', ['phase', 7]],
+  ['moth', ['wing', 3]],
+  ['monument', ['arches', 5, { rarity: 'UR', kind: '黄金遗迹' }]],
+  ['compass', ['compass', 5, { rarity: 'UR', kind: '罗盘遗物' }]],
+  ['summit', ['summits', 8, { rarity: 'UR', kind: '雪岭秘境' }]],
+  ['crystal', ['facet', 7, { rarity: 'UR', kind: '晶石' }]],
+  ['horizon', ['eclipse', 7, { rarity: 'UR', kind: '日蚀天象' }]],
 ])
 
 function hashWord(word: string) {
@@ -71,7 +77,7 @@ export function cardDesign(text: string, concealed = false) {
   const creature = creatureByWord(key)
   const engraving: Motif = concealed ? 'compass' : entry?.[0] ?? motifs[seed % motifs.length]
   const motif = creature?.art ?? engraving
-  const identity: CardIdentity | null = concealed ? null : creature ?? identities[engraving]
+  const identity: CardIdentity | null = concealed ? null : creature ?? entry?.[2] ?? identities[engraving]
   return {
     seed, motif, engraving, identity, series: creature?.series, fingerprint: motif + '-' + seed.toString(36),
     effect: concealed ? undefined : effectForArt[motif],

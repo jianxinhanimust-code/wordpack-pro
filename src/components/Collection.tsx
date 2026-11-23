@@ -60,11 +60,13 @@ export function Collection({ data, active, words, books, memberships, reduced, n
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const activePage = Math.min(page, totalPages - 1)
   const sectionCount = book && !series ? pool.filter(w => memberships.get(wordKey(w.word))?.has(book)).length : pool.length
+  const narrow = filter !== 'all' || rarity !== 'all' || wordKey(query) !== ''
+  const shown = narrow ? filtered.length : sectionCount
   const collected = Object.keys(data.collected)
     .filter(word => !book || (series ? creatureByWord(word)?.series === book : memberships.get(word)?.has(book))).length
   return <div className="standard-page">
     <div className="page-heading"><div><h1>收藏图鉴</h1><p>已收藏 {collected} 张词卡。打开卡片可查看学习记录和共鸣。</p></div>
-      <span className="pill"><Gem size={17}/>{sectionCount.toLocaleString()} 张词卡</span></div>
+      <span className="pill" aria-live="polite"><Gem size={17}/>{shown.toLocaleString()} 张{narrow ? '匹配' : '词卡'}</span></div>
     <section className="creature-banner" aria-label="生物词卡系列" data-series={series?.meta.id}>
       <img src={illustrationUrl(series?.cover ?? artBooks[1].cover)} alt="" width="720" height="1008" decoding="async"/>
       <div className="creature-banner-content">
