@@ -7,6 +7,8 @@ import { wordKey } from '@/core/schema'
 import { getProgress, recallStatus } from '@/core/learning'
 import { meaningOf, other, related } from '@/data/editorial'
 import { save } from '@/core/vault'
+import { cardDesign, rarities } from '@/core/cardArt'
+import type { Rarity } from '@/core/cardArt'
 import { WordCard } from './WordCard'
 import { WordDetails } from './WordDetails'
 import { Modal } from './LibraryPages'
@@ -17,6 +19,7 @@ const filters = [
 ] as const
 const skillNames: Record<Skill, string> = { recognition: '认词', spelling: '拼写', listening: '听音' }
 const PAGE_SIZE = 24
+type RarityFilter = 'all' | 'variant' | Rarity
 
 export function Collection({ data, active, words, books, memberships, reduced, now, learn }: {
   data: Data; words: Word[]; books: BookMeta[]; memberships: Map<string, Set<string>>;
@@ -26,6 +29,7 @@ export function Collection({ data, active, words, books, memberships, reduced, n
   const [filter, setFilter] = useState<typeof filters[number]['value']>('all')
   const [query, setQuery] = useState('')
   const [book, setBook] = useState(active)
+  const [rarity, setRarity] = useState<RarityFilter>('all')
   const [page, setPage] = useState(0)
   const [selected, setSelected] = useState<Word | null>(null)
   const index = useMemo(() => new Map(words.map(w => [wordKey(w.word), w])), [words])
@@ -37,12 +41,14 @@ export function Collection({ data, active, words, books, memberships, reduced, n
     }
     return words.filter(w => {
       const id = wordKey(w.word)
+      const identity = rarity === 'all' ? null : cardDesign(id).identity
       return (!book || memberships.get(id)?.has(book))
         && (!text || id.includes(text) || meaningOf(w).includes(text))
+        && (rarity === 'all' || (rarity === 'variant' ? !!identity?.variant : identity?.rarity === rarity))
         && (filter === 'all' || filter === 'owned' && Object.hasOwn(data.collected, id)
           || filter === 'starred' && data.favorites.includes(id) || filter === 'due' && due(id))
     })
-  }, [words, query, book, filter, data, now, memberships])
+  }, [words, query, book, rarity, filter, data, now, memberships])
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const activePage = Math.min(page, totalPages - 1)
   const sectionCount = book ? words.filter(w => memberships.get(wordKey(w.word))?.has(book)).length : words.length
@@ -58,6 +64,11 @@ export function Collection({ data, active, words, books, memberships, reduced, n
           onChange={e => { setQuery(e.target.value); setPage(0) }}/></label>
         <select aria-label="筛选词书" value={book} onChange={e => { setBook(e.target.value); setPage(0) }}>
           <option value="">全部词书</option>{books.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+        </select>
+        <select aria-label="筛选稀有度或异种" value={rarity} onChange={e => { setRarity(e.target.value as RarityFilter); setPage(0) }}>
+          <option value="all">全部稀有度</option>
+          {Object.entries(rarities).map(([id, label]) => <option key={id} value={id}>{id} · {label}</option>)}
+          <option value="variant">仅看异种</option>
         </select>
       </div>
     </div>

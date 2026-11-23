@@ -57,6 +57,8 @@ test('cancel and complete a real tear, reveal stable card art, and persist FSRS'
   await expect.poll(() => preview.locator('.card-illustration img').evaluateAll(images =>
     images.every(node => node instanceof HTMLImageElement && node.complete && node.naturalWidth > 0))).toBe(true)
   await expect(preview.filter({ hasText: 'adapt' })).toHaveAttribute('data-relief', 'true')
+  await expect(preview.filter({ hasText: 'adapt' })).toHaveAttribute('data-rarity', 'SR')
+  await expect(preview.filter({ hasText: 'adapt' }).getByText('星辉异种', { exact: false })).toBeVisible()
   const motifs = await preview.evaluateAll(cards => cards.map(card => (card as HTMLElement).dataset.motif))
   expect(new Set(motifs).size).toBe(5)
   await expect.poll(() => preview.locator('canvas').evaluateAll(images => new Set(images.map(image =>
@@ -95,6 +97,14 @@ test('cancel and complete a real tear, reveal stable card art, and persist FSRS'
   await page.goto('/#review')
   await page.getByRole('button', { name: /错词专项/ }).click()
   await expect(page.locator('.prompt-word b')).toHaveText(term)
+  await page.goto('/#collection')
+  const rarity = page.getByRole('combobox', { name: '筛选稀有度或异种' })
+  await rarity.selectOption('UR')
+  await expect(page.locator('.collection-grid .word-card[data-rarity=UR]').first()).toBeVisible()
+  await expect(page.locator('.collection-grid .word-card:not([data-rarity=UR])')).toHaveCount(0)
+  await rarity.selectOption('variant')
+  await expect(page.locator('.collection-grid .word-card[data-variant=true]').first()).toBeVisible()
+  await expect(page.locator('.collection-grid .word-card:not([data-variant=true])')).toHaveCount(0)
 })
 
 test('import, strict spelling, export and restore learning records', async ({ page }) => {

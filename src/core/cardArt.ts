@@ -6,6 +6,29 @@ export const motifs = [
 ] as const
 type Motif = typeof motifs[number]
 
+export const rarities = { N: '普通', R: '稀有', SR: '史诗', UR: '传说' } as const
+export type Rarity = keyof typeof rarities
+
+type CardIdentity = { rarity: Rarity; kind: string; variant?: string }
+const identities: Record<Motif, CardIdentity> = {
+  arches: { rarity: 'N', kind: '秘境' },
+  waters: { rarity: 'R', kind: '秘境' },
+  tiles: { rarity: 'N', kind: '遗物' },
+  wing: { rarity: 'SR', kind: '月蛾', variant: '星辉异种' },
+  vessel: { rarity: 'R', kind: '遗物' },
+  compass: { rarity: 'R', kind: '遗物' },
+  phase: { rarity: 'R', kind: '天象' },
+  iris: { rarity: 'R', kind: '植物' },
+  tree: { rarity: 'N', kind: '植物' },
+  summits: { rarity: 'N', kind: '秘境' },
+  astrolabe: { rarity: 'SR', kind: '遗物' },
+  facet: { rarity: 'SR', kind: '晶石' },
+  hourglass: { rarity: 'N', kind: '遗物' },
+  braid: { rarity: 'N', kind: '遗物' },
+  shell: { rarity: 'N', kind: '遗物' },
+  eclipse: { rarity: 'UR', kind: '天象' },
+}
+
 export function illustrationUrl(name: Motif | 'card-back' | 'wing-subject') {
   return `${import.meta.env.BASE_URL}card-art/${name}.webp`
 }
@@ -45,6 +68,7 @@ export function cardDesign(text: string, concealed = false) {
   const motif: Motif = concealed ? 'compass' : entry?.[0] ?? motifs[seed % motifs.length]
   return {
     seed, motif, fingerprint: motif + '-' + seed.toString(36),
+    identity: concealed ? null : identities[motif],
     palette: palettes[concealed ? 0 : entry?.[1] ?? ((seed >>> 7) % palettes.length)],
     frame: (seed >>> 17) % 3,
     layers: 4 + ((seed >>> 13) % 4),

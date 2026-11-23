@@ -249,6 +249,49 @@
     radial-gradient(circle at 28% 12%, #f9daae 0 .55px, #ffe5aa4f 1.4px, transparent 2.5px);
   transition: transform .15s ease-out;
 }
+.word-card[data-rarity='N'] { --rarity-metal: #c4c8d3; }
+.word-card[data-rarity='R'] { --rarity-metal: #83d7ff; }
+.word-card[data-rarity='SR'] { --rarity-metal: #e2aaff; }
+.word-card[data-rarity='UR'] { --rarity-metal: #ffe0a0; }
+.word-card[data-rarity] { border-color: color-mix(in srgb, var(--rarity-metal) 75%, #181327); }
+.word-card:is([data-rarity='SR'], [data-rarity='UR']) {
+  box-shadow: 0 10px 23px #0703138c, 0 0 15px color-mix(in srgb, var(--rarity-metal) 26%, transparent);
+}
+.word-card[data-rarity='UR'] .card-starlight { opacity: 1; }
+.card-identity {
+  position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  font-size: clamp(8px, 5.1cqi, 12px); line-height: 1;
+}
+.card-identity::before {
+  content: ''; position: absolute; inset: 3%; border-radius: 7px;
+  border: 1px solid color-mix(in srgb, var(--rarity-metal) 42%, transparent);
+}
+.word-card[data-rarity='SR'] .card-identity::before { border-style: dashed; }
+.word-card[data-rarity='UR'] .card-identity::before {
+  border: 3px double var(--rarity-metal);
+  box-shadow: inset 0 0 16px #ffdb7750, 0 0 7px #f8bf6460;
+}
+.card-rarity, .card-kind {
+  position: absolute; top: 6%; border: 1px solid #f3e9ff33; border-radius: 3px;
+  background: #100d1ce6; padding: .38em .47em; white-space: nowrap;
+}
+.card-rarity { left: 6%; color: var(--rarity-metal); letter-spacing: .02em; }
+.card-rarity > strong { font-family: var(--mono); }
+.card-kind { right: 6%; color: #eae2f3; }
+.word-card[data-variant] .card-kind { color: #ffd5f7; border-color: #dfa2d990; }
+@container (max-width: 120px) {
+  .card-rarity > span, .card-kind > span { display: none; }
+}
+.reveal-front .word-card:is([data-rarity='SR'], [data-rarity='UR']) .card-identity::after {
+  content: ''; position: absolute; inset: 0; mix-blend-mode: screen;
+  background: linear-gradient(115deg, transparent 27%, #a8d8ff00 38%, #a8d8ff58 46%, #ffd6ee7d 50%, #fde1a949 55%, transparent 67%);
+  animation: rarity-foil .82s ease-out calc(.32s + var(--index) * 125ms) both;
+}
+@keyframes rarity-foil {
+  from { transform: translateX(-105%); opacity: 0; }
+  36% { opacity: .8; }
+  to { transform: translateX(105%); opacity: 0; }
+}
 .card-name { text-shadow: 0 1px 5px #090413, 0 1px 11px #090413; }
 .card-name {
   position: absolute; z-index: 1; inset: 74% 9% 6%; display: flex; flex-direction: column;

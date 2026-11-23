@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties, PointerEvent } from 'react'
 import type { Word } from '@/data/books'
-import { artHeight, artWidth, cardDesign, illustrationUrl, paintCard } from '@/core/cardArt'
+import { artHeight, artWidth, cardDesign, illustrationUrl, paintCard, rarities } from '@/core/cardArt'
 
 const lightProperties = [
   '--px', '--py', '--rx', '--ry', '--foil-strength', '--foil-angle',
@@ -17,6 +17,7 @@ export function WordCard({ word, compact = false, staticMotion = false, conceale
   const [painted, setPainted] = useState('')
   const [subjectReady, setSubjectReady] = useState(false)
   const design = useMemo(() => cardDesign(word.word, concealed), [word.word, concealed])
+  const { identity } = design
   const image = illustrationUrl(concealed ? 'card-back' : design.motif)
   const relief = !concealed && design.motif === 'wing' && subjectReady
   const illustrated = painted === image || relief
@@ -65,7 +66,7 @@ export function WordCard({ word, compact = false, staticMotion = false, conceale
   }
   return <span className={`word-card ${compact ? 'compact-card' : ''}`}
       data-pattern={design.fingerprint} data-motif={design.motif} data-artwork={illustrated || undefined}
-      data-relief={relief || undefined} style={variables}
+      data-relief={relief || undefined} data-rarity={identity?.rarity} data-variant={!!identity?.variant || undefined} style={variables}
       ref={element} onPointerMove={follow} onPointerLeave={reset} onPointerCancel={reset}>
     <span className="card-illustration" aria-hidden="true">
       <img src={image} alt="" loading={compact ? 'lazy' : 'eager'} decoding="async" draggable={false}
@@ -77,6 +78,10 @@ export function WordCard({ word, compact = false, staticMotion = false, conceale
     <canvas className="card-art" ref={canvas} width={artWidth * density} height={artHeight * density} aria-hidden="true"/>
     <span className="card-foil" aria-hidden="true"/>
     <span className="card-starlight" aria-hidden="true"/>
+    {identity && <span className="card-identity">
+      <span className="card-rarity"><strong>{identity.rarity}</strong> <span>{rarities[identity.rarity]}</span></span>
+      <span className="card-kind">{identity.variant ? <><span>{identity.kind} · </span>{identity.variant}</> : identity.kind}</span>
+    </span>}
     <span className="card-name">
       <span className={`card-title ${title.length > 12 ? 'long-title' : ''}`} lang="en">{title}</span>
       {!concealed && word.phonetic && <span className="card-caption">{word.phonetic}</span>}
