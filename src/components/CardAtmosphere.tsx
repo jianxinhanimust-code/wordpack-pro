@@ -167,9 +167,35 @@ function driftingLights(field: Field, hot: boolean) {
   }
 }
 
+function frostBloom(field: Field) {
+  const { ctx, x, y, margin, time, power, colors } = field
+  for (const side of [-1, 1]) {
+    for (let crystal = 0; crystal < 7; crystal++) {
+      const age = (time * .24 + crystal * .37 + (side === 1 ? .21 : 0)) % 1
+      const reach = margin * (.48 + crystal % 3 * .16) * Math.min(age * 2.4, 1)
+      const height = y * (crystal / 3.4 - .91)
+      const direction = crystal % 2 ? 1 : -1
+      ctx.save()
+      ctx.translate(side * (x - 1), height)
+      ctx.beginPath()
+      ctx.moveTo(0, 0)
+      ctx.lineTo(side * reach, direction * reach * .35)
+      for (const branch of [.39, .65]) {
+        const px = side * reach * branch
+        const py = direction * reach * .35 * branch
+        ctx.moveTo(px + side * reach * .13, py - reach * .31)
+        ctx.lineTo(px, py)
+        ctx.lineTo(px + side * reach * .16, py + reach * .28)
+      }
+      lightStroke(field, 1, power * Math.sin(age * Math.PI) * .9, crystal % 2 ? colors.glint : colors.main)
+      ctx.restore()
+    }
+  }
+}
+
 const painters: Record<CardEffect, (field: Field) => void> = {
   water: tide, halo: corona, arc: electricity, prism: refraction, mist: vapor,
-  embers: field => driftingLights(field, true), motes: field => driftingLights(field, false),
+  embers: field => driftingLights(field, true), motes: field => driftingLights(field, false), frost: frostBloom,
 }
 
 export function CardAtmosphere({ effect, rarity, seed, reduced }: {

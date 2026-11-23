@@ -50,10 +50,22 @@ describe('word card artwork', () => {
   it('adds 16 distinct exotic cards alongside the first series', () => {
     const [original, exotic] = artBooks
     expect([original.words.length, exotic.words.length]).toEqual([18, 16])
-    const designs = artBooks.flatMap(book => book.words.map(word => cardDesign(word.word)))
+    const designs = [original, exotic].flatMap(book => book.words.map(word => cardDesign(word.word)))
     expect(new Set(designs.map(card => card.motif)).size).toBe(34)
     expect(cardDesign('colossal')).toMatchObject({ motif: 'canyon-tortoise', series: 'exotic', identity: { rarity: 'UR' } })
     expect(alternateCreature('radiate')?.word).toBe('adhere')
+  })
+
+  it('adds 16 original Variety series entries with two legends and a paired animated variant', () => {
+    const variety = artBooks[2]
+    expect(variety.words).toHaveLength(16)
+    const designs = artBooks.flatMap(book => book.words.map(word => cardDesign(word.word)))
+    expect(new Set(designs.map(card => card.motif)).size).toBe(50)
+    expect(cardDesign('pierce')).toMatchObject({ motif: 'glacier-narwhal', effect: 'frost', identity: { rarity: 'UR' } })
+    expect(cardDesign('shelter')).toMatchObject({ motif: 'canopy-sloth', effect: 'motes', identity: { rarity: 'UR' } })
+    expect(cardDesign('velvet').identity?.variant).toBeUndefined()
+    expect(cardDesign('frost')).toMatchObject({ effect: 'frost', identity: { variant: '霜化异种' } })
+    expect(alternateCreature('frost')?.word).toBe('vibrate')
   })
 
   it('gives representative motifs distinct effects independently of rarity', () => {

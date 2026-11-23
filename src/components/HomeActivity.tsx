@@ -1,5 +1,5 @@
 import { useId, useMemo, useState } from 'react'
-import { ArrowRight, Check, ChevronRight, Layers3, Leaf, LoaderCircle, PackageOpen, PawPrint, Star, X, Zap } from 'lucide-react'
+import { ArrowRight, Check, ChevronRight, Layers3, Leaf, LoaderCircle, PackageOpen, PawPrint, Snowflake, Star, X, Zap } from 'lucide-react'
 import type { Word } from '@/data/books'
 import { getNote, meaningOf } from '@/data/editorial'
 import { artBook } from '@/data/creatures'
@@ -84,6 +84,7 @@ const shelves = [
   { id: 'favorites', label: '特别收藏', icon: Star },
   { id: 'creatures', label: '词灵系列', icon: PawPrint },
   { id: 'exotic', label: '异境物种', icon: Leaf },
+  { id: 'variety', label: '万象生灵', icon: Snowflake },
 ] as const
 
 export function Showcase({ words, data, loading, reduced, openGallery, openArtBook }: {

@@ -203,6 +203,8 @@
 .pack-stage[data-edition='creatures'] .foil-pack { filter: drop-shadow(1px 14px 20px #07021284) hue-rotate(104deg) saturate(.85); }
 .pack-stage[data-edition='exotic'] { border-color: #507c70; }
 .pack-stage[data-edition='exotic'] .foil-pack { filter: drop-shadow(1px 14px 20px #07021284) hue-rotate(-100deg) saturate(.85); }
+.pack-stage[data-edition='variety'] { border-color: #5579a6; }
+.pack-stage[data-edition='variety'] .foil-pack { filter: drop-shadow(1px 14px 20px #07021284) hue-rotate(-37deg) saturate(.85); }
 .pack-static :is(.foil-pack, .foil-body, .foil-tab, .foil-backing, .foil-mouth, .stage-light) { animation: none; transition: none; }
 
 .word-card {

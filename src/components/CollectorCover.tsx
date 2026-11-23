@@ -8,6 +8,7 @@ const covers = {
   cet6: ['facet', 'arches', 'wing'],
   creatures: ['moss-otter', 'eclipse-phoenix', 'prism-beetle-crystal'],
   exotic: ['glass-octopus', 'canyon-tortoise', 'salt-gecko-obsidian'],
+  variety: ['canopy-sloth', 'glacier-narwhal', 'glasswing-cicada-frost'],
 } as const
 
 export function CollectorCover({ exam }: { exam: Exam | ArtBookId }) {

@@ -331,7 +331,7 @@ test('exam galleries show varied legendary artwork and only intentionally assign
   const books = page.getByRole('combobox', { name: '筛选词书' })
   const rarity = page.getByRole('combobox', { name: '筛选稀有度或异种' })
 
-  for (const [book, count] of [['cet4', 6], ['cet6', 8]] as const) {
+  for (const [book, count] of [['cet4', 8], ['cet6', 10]] as const) {
     await books.selectOption(book)
     await rarity.selectOption('UR')
     await expect(cards).toHaveCount(count)
@@ -340,14 +340,53 @@ test('exam galleries show varied legendary artwork and only intentionally assign
     expect(new Set(motifs).size).toBe(count)
 
     await rarity.selectOption('variant')
-    await expect(cards).toHaveCount(3)
+    await expect(cards).toHaveCount(4)
     expect(await cards.locator('.card-kind').allTextContents()).toEqual(expect.arrayContaining([
-      expect.stringContaining('星辉异种'), expect.stringContaining('幽影异种'), expect.stringContaining('曜岩异种'),
+      expect.stringContaining('星辉异种'), expect.stringContaining('幽影异种'), expect.stringContaining('曜岩异种'), expect.stringContaining('霜化异种'),
     ]))
   }
 
   await books.selectOption('')
-  await expect(cards).toHaveCount(4)
+  await expect(cards).toHaveCount(5)
   await expect(gallery.getByRole('button', { name: /晶化异种.*crystallize/ })).toBeVisible()
+})
+
+test('Variety series has its own pack and the frost crystals visibly animate', async ({ page }) => {
+  await page.goto('/')
+  const showcase = page.getByRole('region', { name: '收藏展柜' })
+  await showcase.getByRole('button', { name: '万象生灵' }).click()
+  await showcase.getByRole('button', { name: '查看全系列' }).click()
+  await expect(page).toHaveURL(/#collection\?book=variety$/)
+  const gallery = page.locator('.collection-grid')
+  await expect(gallery.locator('.word-card[data-series=variety]')).toHaveCount(16)
+  const rarity = page.getByRole('combobox', { name: '筛选稀有度或异种' })
+  await rarity.selectOption('UR')
+  await expect(gallery.locator('.card-title')).toHaveText(['shelter', 'pierce'])
+  await rarity.selectOption('variant')
+  await expect(gallery.locator('.word-card')).toHaveAttribute('data-motif', 'glasswing-cicada-frost')
+
+  await page.getByRole('button', { name: '拆万象生灵词包' }).click()
+  await expect(page.locator('.foil-wordmark strong')).toHaveText('万象生灵')
+  await page.getByRole('button', { name: '直接打开' }).click()
+  const frost = page.getByRole('button', { name: '预览词卡 frost' })
+  await expect(frost).toHaveAttribute('data-effect', 'frost')
+  expect(await frost.evaluate(card => getComputedStyle(card, '::after').animationName)).toContain('effect-drift')
+  await frost.click()
+  const viewer = page.getByRole('dialog', { name: '词卡预览' })
+  const atmosphere = viewer.locator('.viewer-atmosphere')
+  await expect(atmosphere).toHaveAttribute('data-effect', 'frost')
+  const signature = () => atmosphere.evaluate(canvas => {
+    const el = canvas as HTMLCanvasElement
+    const pixels = el.getContext('2d')!.getImageData(0, 0, el.width, el.height).data
+    let digest = 0
+    for (let i = 3; i < pixels.length; i += 52) digest = Math.imul(digest, 31) ^ pixels[i]
+    return digest
+  })
+  await expect.poll(signature).not.toBe(0)
+  const first = await signature()
+  await expect.poll(signature).not.toBe(first)
+  await viewer.getByRole('button', { name: '翻看中文释义' }).click()
+  await expect(viewer.locator('.viewer-definitions')).toContainText('霜冻')
+  await expect(atmosphere).toHaveCount(0)
 })
 

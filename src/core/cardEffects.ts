@@ -10,6 +10,7 @@ export const effectColors = {
   embers: { main: '#ff8b59', glint: '#fff1bf', accent: '#fb4c57' },
   mist: { main: '#a9c2ff', glint: '#f0fcff', accent: '#c498e6' },
   motes: { main: '#a8df81', glint: '#fff6be', accent: '#f4b98e' },
+  frost: { main: '#7bcbff', glint: '#ebfbff', accent: '#a9aaff' },
 } as const
 export type CardEffect = keyof typeof effectColors
 export type CardEffectStyle = CSSProperties & Record<`--${string}`, string | number>
@@ -33,4 +34,8 @@ export const effectForArt: Record<Motif | CreatureArt, CardEffect> = {
   'cotton-bumblebee': 'motes', 'dusk-jerboa': 'embers', 'glass-octopus': 'water', 'lantern-bat': 'embers',
   'rain-tapir': 'mist', 'comb-sea-angel': 'water', 'fern-jumping-spider': 'motes', 'iron-root-secretarybird': 'embers',
   'tide-bell-jellyfish': 'water', 'canyon-tortoise': 'embers', 'aurora-siphonophore': 'prism', 'salt-gecko-obsidian': 'embers',
+  'cinder-pangolin': 'embers', 'dew-chameleon': 'motes', 'pebble-puffin': 'water', 'velvet-moth': 'motes',
+  'moss-salamander': 'water', 'glasswing-cicada': 'prism', 'sand-ray-hound': 'embers', 'coral-boxfish': 'water',
+  'peat-owl': 'mist', 'iron-stag-beetle': 'arc', 'kelp-seadragon': 'water', 'ash-condor': 'embers',
+  'amber-centipede': 'embers', 'glacier-narwhal': 'frost', 'canopy-sloth': 'motes', 'glasswing-cicada-frost': 'frost',
 }

@@ -82,8 +82,43 @@ const exotic = [
     sense: ['v.', '漂流；缓慢移动'] },
 ] as const satisfies readonly Creature[]
 
-export type CreatureArt = typeof creatures[number]['art'] | typeof exotic[number]['art']
-export type ArtBookId = 'creatures' | 'exotic'
+const variety = [
+  { word: 'dive', art: 'pebble-puffin', kind: '卵石海鹦', rarity: 'N', palette: 8, phonetic: '/daɪv/',
+    sense: ['v.', '潜入水中；俯冲'] },
+  { word: 'vibrate', art: 'glasswing-cicada', kind: '琉璃翼蝉', rarity: 'R', palette: 5, phonetic: '/vaɪˈbreɪt/',
+    sense: ['v.', '振动；颤动'] },
+  { word: 'soar', art: 'ash-condor', kind: '灰烬神鹫', rarity: 'SR', palette: 9, phonetic: '/sɔː/',
+    sense: ['v.', '翱翔；迅速上升'] },
+  { word: 'shelter', art: 'canopy-sloth', kind: '古冠树懒', rarity: 'UR', palette: 6, phonetic: '/ˈʃeltə/',
+    sense: ['n.', '遮蔽物；庇护所'] },
+  { word: 'frost', art: 'glasswing-cicada-frost', kind: '琉璃翼蝉', rarity: 'SR', palette: 4, phonetic: '/frɒst/',
+    sense: ['n.', '霜；霜冻'], variant: '霜化异种', formOf: 'vibrate' },
+  { word: 'shield', art: 'cinder-pangolin', kind: '烬甲穿山甲', rarity: 'N', palette: 2, phonetic: '/ʃiːld/',
+    sense: ['n.', '盾；防护物'] },
+  { word: 'scent', art: 'sand-ray-hound', kind: '沙帆猎犬', rarity: 'R', palette: 2, phonetic: '/sent/',
+    sense: ['n.', '气味；气味留下的踪迹'] },
+  { word: 'camouflage', art: 'kelp-seadragon', kind: '海藻叶海龙', rarity: 'SR', palette: 1, phonetic: '/ˈkæməflɑːʒ/',
+    sense: ['v.', '伪装；掩饰'] },
+  { word: 'pierce', art: 'glacier-narwhal', kind: '冰川独角鲸', rarity: 'UR', palette: 4, phonetic: '/pɪəs/',
+    sense: ['v.', '刺穿；穿透'] },
+  { word: 'segment', art: 'amber-centipede', kind: '琥珀蜈蚣', rarity: 'SR', palette: 5, phonetic: '/ˈseɡmənt/',
+    sense: ['n.', '部分；段；节'] },
+  { word: 'disguise', art: 'dew-chameleon', kind: '晨露变色龙', rarity: 'N', palette: 6, phonetic: '/dɪsˈɡaɪz/',
+    sense: ['v.', '伪装；掩饰身份或外貌'] },
+  { word: 'rigid', art: 'coral-boxfish', kind: '珊瑚箱鲀', rarity: 'R', palette: 4, phonetic: '/ˈrɪdʒɪd/',
+    sense: ['adj.', '坚硬的；僵硬的；不易改变的'] },
+  { word: 'velvet', art: 'velvet-moth', kind: '绒尾蛾', rarity: 'N', palette: 3, phonetic: '/ˈvelvɪt/',
+    sense: ['n.', '天鹅绒；丝绒'] },
+  { word: 'silent', art: 'peat-owl', kind: '泥炭林鸮', rarity: 'R', palette: 8, phonetic: '/ˈsaɪlənt/',
+    sense: ['adj.', '无声的；沉默的'] },
+  { word: 'regenerate', art: 'moss-salamander', kind: '苔溪蝾螈', rarity: 'N', palette: 6, phonetic: '/rɪˈdʒenəreɪt/',
+    sense: ['v.', '再生；使恢复活力'] },
+  { word: 'grip', art: 'iron-stag-beetle', kind: '铁角锹甲', rarity: 'R', palette: 7, phonetic: '/ɡrɪp/',
+    sense: ['v.', '抓紧；握牢'] },
+] as const satisfies readonly Creature[]
+
+export type CreatureArt = typeof creatures[number]['art'] | typeof exotic[number]['art'] | typeof variety[number]['art']
+export type ArtBookId = 'creatures' | 'exotic' | 'variety'
 type CardCreature = Omit<Creature, 'art'> & { art: CreatureArt; series: ArtBookId }
 
 function edition<const Id extends ArtBookId>(meta: Omit<BookMeta, 'id' | 'totalCount'> & { id: Id },
@@ -99,11 +134,14 @@ export const artBooks = [
     creatures, 'eclipse-phoenix', ['absorb', 'eclipse', 'crystallize'], '词灵词包'),
   edition({ id: 'exotic', name: '异境物种', shortName: '异境', description: '16 张生物词卡，含曜岩异种。', color: 'emerald' },
     exotic, 'canyon-tortoise', ['adhere', 'transparent', 'colossal'], '异境物种词包'),
+  edition({ id: 'variety', name: '万象生灵', shortName: '万象', description: '16 张生物词卡，含霜化异种和两张传说。', color: 'blue' },
+    variety, 'glacier-narwhal', ['dive', 'frost', 'pierce'], '万象生灵词包'),
 ] as const
 
 const byWord = new Map<string, CardCreature>([
   ...creatures.map(entry => [entry.word, { ...entry, series: 'creatures' }] as const),
   ...exotic.map(entry => [entry.word, { ...entry, series: 'exotic' }] as const),
+  ...variety.map(entry => [entry.word, { ...entry, series: 'variety' }] as const),
 ])
 export const creatureWords = artBooks[0].words
 export const artBook = (id: string | undefined) => artBooks.find(book => book.meta.id === id)
